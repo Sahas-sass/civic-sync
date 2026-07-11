@@ -5,7 +5,7 @@ import {
   View, 
   TouchableOpacity, 
   SafeAreaView,
-  Image
+  Image  // <-- 1. Added Image to imports
 } from 'react-native';
 import { colors } from '../theme/colors';
 
@@ -13,12 +13,17 @@ export default function WelcomeScreen({ navigation }) {
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.content}>
+        
         {/* Logo and Branding Center */}
         <View style={styles.logoContainer}>
-          {/* If you have a local image, you can use an <Image source={require('../../assets/images/splash-icon.png')} /> here */}
-          <View style={styles.placeholderLogo}>
-            <Text style={styles.logoText}>CS</Text>
-          </View>
+          
+          {/* 2. Swapped the Text placeholder for the Image component */}
+          <Image 
+            source={require('../../assets/images/splash-icon.png')} 
+            style={styles.logoImage}
+            resizeMode="contain"
+          />
+
           <Text style={styles.appName}>CivicSync</Text>
           <Text style={styles.tagline}>Your AI Legal & Civic Navigator</Text>
         </View>
@@ -31,6 +36,7 @@ export default function WelcomeScreen({ navigation }) {
         >
           <Text style={styles.buttonText}>Continue</Text>
         </TouchableOpacity>
+        
       </View>
     </SafeAreaView>
   );
@@ -39,7 +45,7 @@ export default function WelcomeScreen({ navigation }) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.primaryBlue, // Matches your native splash screen background
+    backgroundColor: colors.primaryBlue, 
   },
   content: {
     flex: 1,
@@ -53,23 +59,11 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
-  placeholderLogo: {
-    width: 100,
-    height: 100,
-    backgroundColor: colors.surface,
-    borderRadius: 24,
-    justifyContent: 'center',
-    alignItems: 'center',
+  // 3. Replaced placeholder styles with image dimensions
+  logoImage: {
+    width: 120,
+    height: 120,
     marginBottom: 24,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.1,
-    shadowRadius: 12,
-  },
-  logoText: {
-    fontSize: 40,
-    fontWeight: 'bold',
-    color: colors.primaryBlue,
   },
   appName: {
     fontSize: 36,
