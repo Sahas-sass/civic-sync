@@ -1,16 +1,16 @@
 import { Ionicons } from '@expo/vector-icons';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { BlurView } from 'expo-blur';
-import { Platform, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Platform, StyleSheet, TouchableOpacity } from 'react-native';
+import AgentScreen from '../screens/AgentScreen';
 import HomeScreen from '../screens/HomeScreen';
+import ProfileScreen from '../screens/ProfileScreen';
+import RoadmapsScreen from '../screens/RoadmapsScreen';
+import VaultScreen from '../screens/VaultScreen';
 import { colors } from '../theme/colors';
 
 
 // Placeholder components
-const RoadmapsScreen = () => <View style={styles.center}><Text>Civic Roadmaps Checklist</Text></View>;
-const VaultScreen = () => <View style={styles.center}><Text>Secure Document Vault</Text></View>;
-const ProfileScreen = () => <View style={styles.center}><Text>User Secure Profile</Text></View>;
-const AgentScreen = () => <View style={styles.center}><Text>AI Agent Chat</Text></View>; // The AI Screen
 
 const Tab = createBottomTabNavigator();
 
