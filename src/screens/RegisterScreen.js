@@ -8,7 +8,8 @@ import {
   ActivityIndicator, 
   KeyboardAvoidingView, 
   Platform,
-  ScrollView
+  ScrollView,
+  Alert
 } from 'react-native';
 import { colors } from '../theme/colors';
 import { supabase } from '../services/supabaseClient';
@@ -21,8 +22,43 @@ export default function RegisterScreen({ navigation }) {
   const [loading, setLoading] = useState(false);
 
   async function handleRegister() {
-    if (!email || !password || !fullName) {
-      alert('Please fill in all required fields.');
+    if (!fullName.trim()) {
+      Alert.alert('Error', 'Full Name is required.');
+      return;
+    }
+
+    if (!nic.trim()) {
+      Alert.alert('Error', 'NIC number is required.');
+      return;
+    }
+
+    // Validate Sri Lankan NIC formats:
+    // Old format: 9 digits followed by 'V' or 'X' (case-insensitive)
+    // New format: 12 digits
+    const nicRegex = /^([0-9]{9}[vVxX]|[0-9]{12})$/;
+    if (!nicRegex.test(nic.trim())) {
+      Alert.alert('Error', 'Invalid NIC format. Must be either 9 digits followed by V/X, or 12 digits.');
+      return;
+    }
+
+    if (!email.trim()) {
+      Alert.alert('Error', 'Email address is required.');
+      return;
+    }
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email.trim())) {
+      Alert.alert('Error', 'Please enter a valid email address.');
+      return;
+    }
+
+    if (!password.trim()) {
+      Alert.alert('Error', 'Password is required.');
+      return;
+    }
+
+    if (password.length < 6) {
+      Alert.alert('Error', 'Password must be at least 6 characters long.');
       return;
     }
     
@@ -43,9 +79,9 @@ export default function RegisterScreen({ navigation }) {
     setLoading(false);
 
     if (error) {
-      alert(error.message);
+      Alert.alert('Error', error.message);
     } else {
-      alert('Registration successful! Please check your email to verify your account.');
+      Alert.alert('Success', 'Registration successful! Please check your email to verify your account.');
       // Optionally navigate back to login or auto-login depending on Supabase settings
       navigation.navigate('Login');
     }
