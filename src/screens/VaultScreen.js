@@ -1,9 +1,5 @@
-import { Ionicons } from '@expo/vector-icons';
-import * as DocumentPicker from 'expo-document-picker';
-import { useState } from 'react';
+import React, { useState } from 'react';
 import {
-  ActivityIndicator,
-  Alert,
   FlatList,
   Platform,
   StyleSheet,
@@ -11,6 +7,7 @@ import {
   TouchableOpacity,
   View
 } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { colors } from '../theme/colors';
 
 const initialDocuments = [
@@ -20,7 +17,7 @@ const initialDocuments = [
     type: 'Official Form',
     date: 'Oct 24, 2026',
     size: '2.4 MB',
-    isReady: true, // Agent has finished filling it
+    isReady: true,
   },
   {
     id: '2',
@@ -28,7 +25,7 @@ const initialDocuments = [
     type: 'Draft Form',
     date: 'Oct 22, 2026',
     size: '1.1 MB',
-    isReady: false, // Agent needs more info
+    isReady: false,
   },
   {
     id: '3',
@@ -40,87 +37,8 @@ const initialDocuments = [
   },
 ];
 
-const ingestEndpoint = process.env.EXPO_PUBLIC_INGEST_URL || 'http://localhost:8000/api/ingest';
-
-const formatFileSize = (size) => {
-  if (!size && size !== 0) return 'Unknown size';
-
-  if (size < 1024) return `${size} B`;
-  if (size < 1024 * 1024) return `${(size / 1024).toFixed(1)} KB`;
-
-  return `${(size / (1024 * 1024)).toFixed(1)} MB`;
-};
-
-export default function VaultScreen() {
+export default function VaultScreen({ navigation }) {
   const [documents, setDocuments] = useState(initialDocuments);
-  const [uploading, setUploading] = useState(false);
-  const [selectedFileName, setSelectedFileName] = useState('');
-  const [uploadStatus, setUploadStatus] = useState('Select a PDF to upload it to the ingestion pipeline.');
-
-  const handlePickDocument = async () => {
-    try {
-      const result = await DocumentPicker.getDocumentAsync({
-        type: 'application/pdf',
-        copyToCacheDirectory: true,
-      });
-
-      if (result.canceled || !result.assets?.length) {
-        return;
-      }
-
-      const pickedFile = result.assets[0];
-      const fileName = pickedFile.name || 'document.pdf';
-
-      setUploading(true);
-      setSelectedFileName(fileName);
-      setUploadStatus(`Uploading ${fileName}...`);
-
-      const formData = new FormData();
-      formData.append('file', {
-        uri: pickedFile.uri,
-        name: fileName,
-        type: pickedFile.mimeType || 'application/pdf',
-      });
-      formData.append('title', fileName);
-
-      const response = await fetch(ingestEndpoint, {
-        method: 'POST',
-        body: formData,
-      });
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(errorText || 'Upload process failed.');
-      }
-
-      const uploadedDate = new Date().toLocaleDateString('en-US', {
-        month: 'short',
-        day: '2-digit',
-        year: 'numeric',
-      });
-
-      setDocuments((currentDocuments) => [
-        {
-          id: `${Date.now()}`,
-          title: fileName,
-          type: 'Uploaded PDF',
-          date: uploadedDate,
-          size: formatFileSize(pickedFile.size),
-          isReady: false,
-        },
-        ...currentDocuments,
-      ]);
-
-      setUploadStatus(`${fileName} uploaded successfully.`);
-      Alert.alert('Success', 'Document successfully ingested into the AI Vector Store!');
-    } catch (error) {
-      const message = error instanceof Error ? error.message : 'Unknown upload error.';
-      setUploadStatus('Upload failed.');
-      Alert.alert('Ingestion Error', message);
-    } finally {
-      setUploading(false);
-    }
-  };
 
   const renderDocument = ({ item }) => (
     <View style={styles.docCard}>
@@ -162,41 +80,20 @@ export default function VaultScreen() {
         <Text style={styles.headerSubtitle}>Your encrypted civic files and ID scans</Text>
       </View>
 
-      <View style={styles.uploadSection}>
-        <View style={styles.uploadCard}>
-          <View style={styles.uploadCopy}>
-            <Text style={styles.uploadTitle}>Add a new document</Text>
-            <Text style={styles.uploadDescription}>
-              Pick a PDF and send it to the ingestion backend for indexing.
-            </Text>
+      {/* New Admin Navigation Button */}
+      <TouchableOpacity 
+        style={styles.adminTriggerButton} 
+        onPress={() => navigation.navigate('Admin')}
+        activeOpacity={0.8}
+      >
+        <View style={styles.buttonFlexRow}>
+          <Text style={styles.plusIcon}>➕</Text>
+          <View style={styles.buttonTextContainer}>
+            <Text style={styles.adminButtonText}>Add Knowledge Documents</Text>
+            <Text style={styles.adminButtonSubtext}>Train the AI on new government rules</Text>
           </View>
-
-          <TouchableOpacity
-            style={[styles.uploadButton, uploading && styles.uploadButtonDisabled]}
-            onPress={handlePickDocument}
-            disabled={uploading}
-            activeOpacity={0.85}
-          >
-            {uploading ? (
-              <ActivityIndicator color={colors.primaryBlue} />
-            ) : (
-              <Ionicons name="cloud-upload-outline" size={24} color={colors.primaryBlue} />
-            )}
-            <Text style={styles.uploadButtonText}>
-              {uploading ? 'Uploading PDF...' : 'Select & Upload Legal PDF'}
-            </Text>
-          </TouchableOpacity>
-
-          <Text style={styles.uploadStatus} numberOfLines={2}>
-            {uploadStatus}
-          </Text>
-          {selectedFileName ? (
-            <Text style={styles.selectedFile} numberOfLines={1} ellipsizeMode="middle">
-              Selected: {selectedFileName}
-            </Text>
-          ) : null}
         </View>
-      </View>
+      </TouchableOpacity>
 
       <FlatList
         data={documents}
@@ -232,64 +129,50 @@ const styles = StyleSheet.create({
     color: colors.textLight,
     marginTop: 4,
   },
-  uploadSection: {
-    padding: 20,
-    paddingBottom: 10,
-  },
-  uploadCard: {
-    backgroundColor: colors.surface,
-    borderRadius: 16,
-    padding: 18,
+  
+  /* --- Admin Button Styles --- */
+  adminTriggerButton: {
+    backgroundColor: '#FFFFFF',
     borderWidth: 1,
     borderColor: '#E2E8F0',
-  },
-  uploadCopy: {
-    marginBottom: 14,
-  },
-  uploadTitle: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: colors.textDark,
-    marginBottom: 4,
-  },
-  uploadDescription: {
-    fontSize: 13,
-    lineHeight: 18,
-    color: colors.textLight,
-  },
-  uploadButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#EFF6FF', // Light blue tint
-    borderWidth: 1,
-    borderColor: '#BFDBFE',
     borderStyle: 'dashed',
     borderRadius: 12,
-    paddingVertical: 16,
+    padding: 16,
+    marginHorizontal: 20,
+    marginTop: 20,
+    marginBottom: 8,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.02,
+    shadowRadius: 4,
+    elevation: 1,
   },
-  uploadButtonDisabled: {
-    opacity: 0.75,
+  buttonFlexRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
   },
-  uploadButtonText: {
-    marginLeft: 10,
-    fontSize: 15,
+  plusIcon: {
+    fontSize: 20,
+    marginRight: 12,
+  },
+  buttonTextContainer: {
+    flex: 1,
+  },
+  adminButtonText: {
+    fontSize: 16,
     fontWeight: '600',
-    color: colors.primaryBlue,
+    color: colors.primaryBlue, 
   },
-  uploadStatus: {
-    marginTop: 12,
+  adminButtonSubtext: {
     fontSize: 12,
     color: colors.textLight,
+    marginTop: 2,
   },
-  selectedFile: {
-    marginTop: 6,
-    fontSize: 12,
-    color: colors.textDark,
-    fontWeight: '500',
-  },
+  /* --------------------------- */
+
   listContainer: {
     paddingHorizontal: 20,
+    paddingTop: 10,
     paddingBottom: 100, // Cushion space for the floating bottom tab bar
   },
   docCard: {
