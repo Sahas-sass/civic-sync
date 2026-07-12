@@ -8,6 +8,7 @@ import WelcomeScreen from './src/screens/WelcomeScreen';
 import LoginScreen from './src/screens/LoginScreen';
 import RegisterScreen from './src/screens/RegisterScreen';
 import AppNavigator from './src/navigation/AppNavigator';
+import AdminScreen from './src/screens/AdminScreen'; // 1. <-- Imported your new screen here
 import { supabase } from './src/services/supabaseClient';
 
 const Stack = createNativeStackNavigator();
@@ -45,7 +46,21 @@ export default function App() {
       <NavigationContainer>
         <Stack.Navigator screenOptions={{ headerShown: false }}>
           {session && session.user ? (
-            <Stack.Screen name="MainApp" component={AppNavigator} />
+            // 2. <-- Wrapped your authenticated screens in a Group
+            <Stack.Group>
+              <Stack.Screen name="MainApp" component={AppNavigator} />
+              
+              {/* 3. <-- Added the Admin screen to the active stack */}
+              <Stack.Screen 
+                name="Admin" 
+                component={AdminScreen} 
+                options={{ 
+                  headerShown: true, // Turns on the top header so users can press "Back"
+                  title: 'Data Control Center',
+                  headerBackTitle: 'Back' // Clean back button for iOS
+                }} 
+              />
+            </Stack.Group>
           ) : (
             <Stack.Group>
               <Stack.Screen name="Welcome" component={WelcomeScreen} />
