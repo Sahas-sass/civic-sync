@@ -46,9 +46,13 @@ export default function ProfileScreen() {
       }
 
       if (data) {
-        setName(data.full_name || '');
-        setNic(data.nic_number || '');
-        setPhone(data.phone || '');
+        setName(data.full_name || user.user_metadata?.full_name || '');
+        setNic(data.nic_number || user.user_metadata?.nic_number || '');
+        setPhone(data.phone || user.user_metadata?.phone || '');
+      } else {
+        setName(user.user_metadata?.full_name || '');
+        setNic(user.user_metadata?.nic_number || '');
+        setPhone(user.user_metadata?.phone || '');
       }
     } catch (error) {
       Alert.alert('Error fetching profile', error.message);
@@ -65,8 +69,19 @@ export default function ProfileScreen() {
   };
 
   const handleSave = async () => {
-    if (!name.trim() || !nic.trim()) {
-      Alert.alert('Error', 'Full Name and NIC cannot be empty.');
+    if (!name.trim()) {
+      Alert.alert('Error', 'Full Name is required.');
+      return;
+    }
+
+    if (!nic.trim()) {
+      Alert.alert('Error', 'NIC number is required.');
+      return;
+    }
+
+    const nicRegex = /^([0-9]{9}[vVxX]|[0-9]{12})$/;
+    if (!nicRegex.test(nic.trim())) {
+      Alert.alert('Error', 'Invalid NIC format. Must be either 9 digits followed by V/X, or 12 digits.');
       return;
     }
 
