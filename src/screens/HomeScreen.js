@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   StyleSheet, 
   Text, 
@@ -10,8 +10,38 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { colors } from '../theme/colors';
+import { supabase } from '../services/supabaseClient';
 
 export default function HomeScreen() {
+  const [userName, setUserName] = useState('User');
+
+  useEffect(() => {
+    async function loadUserName() {
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user) {
+          const { data } = await supabase
+            .from('profiles')
+            .select('full_name')
+            .eq('id', user.id)
+            .single();
+
+          if (data && data.full_name) {
+            setUserName(data.full_name);
+          } else if (user.user_metadata?.full_name) {
+            setUserName(user.user_metadata.full_name);
+          } else {
+            const emailPrefix = user.email ? user.email.split('@')[0] : 'User';
+            setUserName(emailPrefix);
+          }
+        }
+      } catch (error) {
+        console.log('Error loading user name on home:', error.message);
+      }
+    }
+    loadUserName();
+  }, []);
+
   // Hardcoded dashboard placeholder data for the prototype stage
   const activeRoadmaps = [
     { id: '1', title: 'Small Business Registration', progress: '2 of 4 steps completed', urgent: true },
@@ -32,7 +62,7 @@ export default function HomeScreen() {
         <View style={styles.headerRow}>
           <View>
             <Text style={styles.welcomeText}>Welcome Back,</Text>
-            <Text style={styles.userNameText}>Sahas Samuditha</Text>
+            <Text style={styles.userNameText}>{userName}</Text>
           </View>
           <TouchableOpacity style={styles.notificationButton}>
             <Ionicons name="notifications-outline" size={24} color={colors.surface} />
