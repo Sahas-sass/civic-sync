@@ -13,12 +13,16 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { colors } from '../theme/colors';
 import { supabase } from '../services/supabaseClient';
+import AvatarPicker from '../components/AvatarPicker';
+import PasswordChangeForm from '../components/PasswordChangeForm';
+import DeleteAccountButton from '../components/DeleteAccountButton';
 
 export default function ProfileScreen() {
   const [name, setName] = useState('');
   const [nic, setNic] = useState('');
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
+  const [avatarUrl, setAvatarUrl] = useState(null);
   const [isEditing, setIsEditing] = useState(false);
   const [loading, setLoading] = useState(false);
 
@@ -37,7 +41,7 @@ export default function ProfileScreen() {
 
       const { data, error, status } = await supabase
         .from('profiles')
-        .select('full_name, nic_number, phone')
+        .select('full_name, nic_number, phone, avatar_url')
         .eq('id', user.id)
         .single();
 
@@ -49,6 +53,7 @@ export default function ProfileScreen() {
         setName(data.full_name || user.user_metadata?.full_name || '');
         setNic(data.nic_number || user.user_metadata?.nic_number || '');
         setPhone(data.phone || user.user_metadata?.phone || '');
+        setAvatarUrl(data.avatar_url || null);
       } else {
         setName(user.user_metadata?.full_name || '');
         setNic(user.user_metadata?.nic_number || '');
@@ -66,6 +71,30 @@ export default function ProfileScreen() {
     if (error) {
       Alert.alert('Error signing out', error.message);
     }
+  };
+
+  // Automatically formats phone numbers to Sri Lankan style: +94 XX XXX XXXX
+  const formatPhone = (text) => {
+    let cleaned = text.replace(/[^\d]/g, ''); // digits only
+    if (cleaned.startsWith('0')) {
+      cleaned = '94' + cleaned.substring(1);
+    }
+    if (cleaned.startsWith('94')) {
+      cleaned = '+' + cleaned;
+    } else {
+      cleaned = '+94' + cleaned;
+    }
+    cleaned = cleaned.substring(0, 12); // Max length "+94771234567" is 12 chars
+    
+    // Add spaces for layout: +94 XX XXX XXXX
+    if (cleaned.length > 9) {
+      return ${cleaned.slice(0, 3)}   ;
+    } else if (cleaned.length > 5) {
+      return ${cleaned.slice(0, 3)}  ;
+    } else if (cleaned.length > 3) {
+      return ${cleaned.slice(0, 3)} ;
+    }
+    return cleaned;
   };
 
   const handleSave = async () => {
@@ -99,6 +128,7 @@ export default function ProfileScreen() {
           full_name: name,
           nic_number: nic,
           phone: phone,
+          avatar_url: avatarUrl,
           updated_at: new Date().toISOString(),
         });
 
@@ -130,14 +160,12 @@ export default function ProfileScreen() {
         </View>
       ) : (
         <ScrollView contentContainerStyle={styles.scrollContainer} showsVerticalScrollIndicator={false}>
-          {/* Avatar Section */}
-          <View style={styles.avatarSection}>
-            <View style={styles.avatarCircle}>
-              <Text style={styles.avatarText}>{name ? name.charAt(0) : 'U'}</Text>
-            </View>
-            <Text style={styles.userName}>{name || 'User'}</Text>
-            <Text style={styles.userStatus}>Verified Citizen Account</Text>
-          </View>
+          {/* Avatar Section Component */}
+          <AvatarPicker 
+            avatarUrl={avatarUrl} 
+            name={name} 
+            onUploadSuccess={(url) => setAvatarUrl(url)} 
+          />
 
           {/* Data Form Section */}
           <View style={styles.formSection}>
@@ -161,7 +189,7 @@ export default function ProfileScreen() {
               <TextInput
                 style={[styles.input, !isEditing && styles.inputDisabled]}
                 value={nic}
-                onChangeText={setNic}
+                onChangeText={(text) => setNic(text.toUpperCase())}
                 editable={isEditing}
               />
             </View>
@@ -181,7 +209,7 @@ export default function ProfileScreen() {
               <TextInput
                 style={[styles.input, !isEditing && styles.inputDisabled]}
                 value={phone}
-                onChangeText={setPhone}
+                onChangeText={(text) => setPhone(formatPhone(text))}
                 editable={isEditing}
                 keyboardType="phone-pad"
               />
@@ -196,6 +224,9 @@ export default function ProfileScreen() {
                 )}
               </TouchableOpacity>
             )}
+
+            {/* Password Change Form Component */}
+            <PasswordChangeForm />
           </View>
 
           {/* Logout Section */}
@@ -203,6 +234,9 @@ export default function ProfileScreen() {
             <Ionicons name="log-out-outline" size={20} color="#EF4444" />
             <Text style={styles.logoutButtonText}>Sign Out</Text>
           </TouchableOpacity>
+
+          {/* Delete Account Button Component */}
+          <DeleteAccountButton />
           
         </ScrollView>
       )}
@@ -239,37 +273,6 @@ const styles = StyleSheet.create({
   scrollContainer: {
     padding: 24,
     paddingBottom: 100, // Bottom navigation padding
-  },
-  avatarSection: {
-    alignItems: 'center',
-    marginBottom: 32,
-  },
-  avatarCircle: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    backgroundColor: '#EFF6FF',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 12,
-    borderWidth: 2,
-    borderColor: colors.primaryBlue,
-  },
-  avatarText: {
-    fontSize: 32,
-    fontWeight: 'bold',
-    color: colors.primaryBlue,
-  },
-  userName: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: colors.textDark,
-  },
-  userStatus: {
-    fontSize: 14,
-    color: '#10B981', // Green verified text
-    marginTop: 4,
-    fontWeight: '500',
   },
   formSection: {
     backgroundColor: colors.surface,
