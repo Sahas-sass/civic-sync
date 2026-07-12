@@ -54,12 +54,12 @@ export default function AvatarPicker({
       const blob = await response.blob();
       
       const fileExt = fileUri.split('.').pop() || 'jpg';
-      const fileName = ${user.id}-.;
+      const fileName = `${user.id}-${Date.now()}.${fileExt}`;
 
       const { error: uploadError } = await supabase.storage
         .from('avatars')
         .upload(fileName, blob, {
-          contentType: image/,
+          contentType: `image/${fileExt}`,
           upsert: true,
         });
 
