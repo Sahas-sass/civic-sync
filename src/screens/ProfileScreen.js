@@ -88,11 +88,11 @@ export default function ProfileScreen() {
     
     // Add spaces for layout: +94 XX XXX XXXX
     if (cleaned.length > 9) {
-      return ${cleaned.slice(0, 3)}   ;
+      return `${cleaned.slice(0, 3)} ${cleaned.slice(3, 5)} ${cleaned.slice(5, 8)} ${cleaned.slice(8)}`;
     } else if (cleaned.length > 5) {
-      return ${cleaned.slice(0, 3)}  ;
+      return `${cleaned.slice(0, 3)} ${cleaned.slice(3, 5)} ${cleaned.slice(5)}`;
     } else if (cleaned.length > 3) {
-      return ${cleaned.slice(0, 3)} ;
+      return `${cleaned.slice(0, 3)} ${cleaned.slice(3)}`;
     }
     return cleaned;
   };
