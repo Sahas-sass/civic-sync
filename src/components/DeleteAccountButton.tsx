@@ -26,6 +26,10 @@ export default function DeleteAccountButton() {
               setDeleting(true);
               const { error } = await supabase.rpc('delete_user_account');
               if (error) throw error;
+              
+              // Explicitly clear local session so client redirects to Auth screens
+              await supabase.auth.signOut();
+              
               Alert.alert('Account Deleted', 'Your account has been permanently deleted.');
             } catch (error: any) {
               Alert.alert('Error deleting account', error.message);
