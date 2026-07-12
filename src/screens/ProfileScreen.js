@@ -164,6 +164,7 @@ export default function ProfileScreen() {
           <AvatarPicker 
             avatarUrl={avatarUrl} 
             name={name} 
+            isEditing={isEditing}
             onUploadSuccess={(url) => setAvatarUrl(url)} 
           />
 
