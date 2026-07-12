@@ -8,7 +8,8 @@ import {
   ActivityIndicator, 
   KeyboardAvoidingView, 
   Platform,
-  ScrollView
+  ScrollView,
+  Alert
 } from 'react-native';
 import { colors } from '../theme/colors';
 import { supabase } from '../services/supabaseClient';
@@ -21,8 +22,13 @@ export default function RegisterScreen({ navigation }) {
   const [loading, setLoading] = useState(false);
 
   async function handleRegister() {
-    if (!email || !password || !fullName) {
-      alert('Please fill in all required fields.');
+    if (!email.trim() || !password.trim() || !fullName.trim() || !nic.trim()) {
+      Alert.alert('Error', 'Please fill in all required fields.');
+      return;
+    }
+
+    if (password.length < 6) {
+      Alert.alert('Error', 'Password must be at least 6 characters long.');
       return;
     }
     
@@ -43,9 +49,9 @@ export default function RegisterScreen({ navigation }) {
     setLoading(false);
 
     if (error) {
-      alert(error.message);
+      Alert.alert('Error', error.message);
     } else {
-      alert('Registration successful! Please check your email to verify your account.');
+      Alert.alert('Success', 'Registration successful! Please check your email to verify your account.');
       // Optionally navigate back to login or auto-login depending on Supabase settings
       navigation.navigate('Login');
     }
