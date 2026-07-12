@@ -2,6 +2,7 @@ fastapi
 uvicorn
 python-multipart
 supabase
+langchain-community
 langchain-google-genai
 langchain-text-splitters
 pypdf
