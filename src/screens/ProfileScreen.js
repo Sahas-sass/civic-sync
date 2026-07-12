@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   StyleSheet, 
   Text, 
@@ -7,33 +7,97 @@ import {
   TouchableOpacity, 
   Platform,
   ScrollView,
-  Alert
+  Alert,
+  ActivityIndicator
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { colors } from '../theme/colors';
 import { supabase } from '../services/supabaseClient';
 
 export default function ProfileScreen() {
-  // In a fully wired app, these would populate from supabase.auth.getUser()
-  const [name, setName] = useState('Sahas Samuditha');
-  const [nic, setNic] = useState('199912345678');
-  const [email, setEmail] = useState('sahas@example.com');
-  const [phone, setPhone] = useState('+94 77 123 4567');
+  const [name, setName] = useState('');
+  const [nic, setNic] = useState('');
+  const [email, setEmail] = useState('');
+  const [phone, setPhone] = useState('');
   const [isEditing, setIsEditing] = useState(false);
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    fetchProfile();
+  }, []);
+
+  const fetchProfile = async () => {
+    try {
+      setLoading(true);
+      const { data: { user }, error: authError } = await supabase.auth.getUser();
+      if (authError || !user) {
+        throw new Error('Not authenticated');
+      }
+      setEmail(user.email || '');
+
+      const { data, error, status } = await supabase
+        .from('Profiles')
+        .select('full_name, nic_number, phone')
+        .eq('id', user.id)
+        .single();
+
+      if (error && status !== 406) {
+        throw error;
+      }
+
+      if (data) {
+        setName(data.full_name || '');
+        setNic(data.nic_number || '');
+        setPhone(data.phone || '');
+      }
+    } catch (error) {
+      Alert.alert('Error fetching profile', error.message);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleSignOut = async () => {
     const { error } = await supabase.auth.signOut();
     if (error) {
       Alert.alert('Error signing out', error.message);
     }
-    // Note: App.js is listening to the auth state, so signing out here 
-    // will automatically kick the user back to the LoginScreen!
   };
 
-  const handleSave = () => {
-    setIsEditing(false);
-    Alert.alert('Profile Updated', 'Your secure civic details have been saved.');
-    // Here you would add the Supabase update function to save to your database
+  const handleSave = async () => {
+    if (!name.trim() || !nic.trim()) {
+      Alert.alert('Error', 'Full Name and NIC cannot be empty.');
+      return;
+    }
+
+    try {
+      setLoading(true);
+      const { data: { user }, error: authError } = await supabase.auth.getUser();
+      if (authError || !user) {
+        throw new Error('Not authenticated');
+      }
+
+      const { error } = await supabase
+        .from('Profiles')
+        .upsert({
+          id: user.id,
+          full_name: name,
+          nic_number: nic,
+          phone: phone,
+          updated_at: new Date().toISOString(),
+        });
+
+      if (error) {
+        throw error;
+      }
+
+      setIsEditing(false);
+      Alert.alert('Profile Updated', 'Your secure civic details have been saved.');
+    } catch (error) {
+      Alert.alert('Error updating profile', error.message);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -45,79 +109,88 @@ export default function ProfileScreen() {
         </TouchableOpacity>
       </View>
 
-      <ScrollView contentContainerStyle={styles.scrollContainer} showsVerticalScrollIndicator={false}>
-        {/* Avatar Section */}
-        <View style={styles.avatarSection}>
-          <View style={styles.avatarCircle}>
-            <Text style={styles.avatarText}>{name.charAt(0)}</Text>
-          </View>
-          <Text style={styles.userName}>{name}</Text>
-          <Text style={styles.userStatus}>Verified Citizen Account</Text>
+      {loading && !email ? (
+        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+          <ActivityIndicator size="large" color={colors.primaryBlue} />
         </View>
-
-        {/* Data Form Section */}
-        <View style={styles.formSection}>
-          <Text style={styles.sectionTitle}>Civic Auto-Fill Data</Text>
-          <Text style={styles.sectionSubtitle}>
-            The AI agent uses this encrypted data to complete your official forms.
-          </Text>
-
-          <View style={styles.inputGroup}>
-            <Text style={styles.inputLabel}>Full Legal Name</Text>
-            <TextInput
-              style={[styles.input, !isEditing && styles.inputDisabled]}
-              value={name}
-              onChangeText={setName}
-              editable={isEditing}
-            />
+      ) : (
+        <ScrollView contentContainerStyle={styles.scrollContainer} showsVerticalScrollIndicator={false}>
+          {/* Avatar Section */}
+          <View style={styles.avatarSection}>
+            <View style={styles.avatarCircle}>
+              <Text style={styles.avatarText}>{name ? name.charAt(0) : 'U'}</Text>
+            </View>
+            <Text style={styles.userName}>{name || 'User'}</Text>
+            <Text style={styles.userStatus}>Verified Citizen Account</Text>
           </View>
 
-          <View style={styles.inputGroup}>
-            <Text style={styles.inputLabel}>National Identity Card (NIC)</Text>
-            <TextInput
-              style={[styles.input, !isEditing && styles.inputDisabled]}
-              value={nic}
-              onChangeText={setNic}
-              editable={isEditing}
-            />
+          {/* Data Form Section */}
+          <View style={styles.formSection}>
+            <Text style={styles.sectionTitle}>Civic Auto-Fill Data</Text>
+            <Text style={styles.sectionSubtitle}>
+              The AI agent uses this encrypted data to complete your official forms.
+            </Text>
+
+            <View style={styles.inputGroup}>
+              <Text style={styles.inputLabel}>Full Legal Name</Text>
+              <TextInput
+                style={[styles.input, !isEditing && styles.inputDisabled]}
+                value={name}
+                onChangeText={setName}
+                editable={isEditing}
+              />
+            </View>
+
+            <View style={styles.inputGroup}>
+              <Text style={styles.inputLabel}>National Identity Card (NIC)</Text>
+              <TextInput
+                style={[styles.input, !isEditing && styles.inputDisabled]}
+                value={nic}
+                onChangeText={setNic}
+                editable={isEditing}
+              />
+            </View>
+
+            <View style={styles.inputGroup}>
+              <Text style={styles.inputLabel}>Email Address</Text>
+              <TextInput
+                style={[styles.input, !isEditing && styles.inputDisabled]}
+                value={email}
+                editable={false}
+                keyboardType="email-address"
+              />
+            </View>
+
+            <View style={styles.inputGroup}>
+              <Text style={styles.inputLabel}>Phone Number</Text>
+              <TextInput
+                style={[styles.input, !isEditing && styles.inputDisabled]}
+                value={phone}
+                onChangeText={setPhone}
+                editable={isEditing}
+                keyboardType="phone-pad"
+              />
+            </View>
+
+            {isEditing && (
+              <TouchableOpacity style={styles.saveButton} onPress={handleSave} disabled={loading}>
+                {loading ? (
+                  <ActivityIndicator color={colors.surface} />
+                ) : (
+                  <Text style={styles.saveButtonText}>Save Changes</Text>
+                )}
+              </TouchableOpacity>
+            )}
           </View>
 
-          <View style={styles.inputGroup}>
-            <Text style={styles.inputLabel}>Email Address</Text>
-            <TextInput
-              style={[styles.input, !isEditing && styles.inputDisabled]}
-              value={email}
-              onChangeText={setEmail}
-              editable={false} // Emails usually require a specific secure flow to change
-              keyboardType="email-address"
-            />
-          </View>
-
-          <View style={styles.inputGroup}>
-            <Text style={styles.inputLabel}>Phone Number</Text>
-            <TextInput
-              style={[styles.input, !isEditing && styles.inputDisabled]}
-              value={phone}
-              onChangeText={setPhone}
-              editable={isEditing}
-              keyboardType="phone-pad"
-            />
-          </View>
-
-          {isEditing && (
-            <TouchableOpacity style={styles.saveButton} onPress={handleSave}>
-              <Text style={styles.saveButtonText}>Save Changes</Text>
-            </TouchableOpacity>
-          )}
-        </View>
-
-        {/* Logout Section */}
-        <TouchableOpacity style={styles.logoutButton} onPress={handleSignOut}>
-          <Ionicons name="log-out-outline" size={20} color="#EF4444" />
-          <Text style={styles.logoutButtonText}>Sign Out</Text>
-        </TouchableOpacity>
-        
-      </ScrollView>
+          {/* Logout Section */}
+          <TouchableOpacity style={styles.logoutButton} onPress={handleSignOut}>
+            <Ionicons name="log-out-outline" size={20} color="#EF4444" />
+            <Text style={styles.logoutButtonText}>Sign Out</Text>
+          </TouchableOpacity>
+          
+        </ScrollView>
+      )}
     </View>
   );
 }
