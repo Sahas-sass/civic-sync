@@ -7,7 +7,8 @@ import {
     Text,
     TextInput,
     TouchableOpacity,
-    View
+    View,
+    Alert
 } from 'react-native';
 import { supabase } from '../services/supabaseClient';
 import { colors } from '../theme/colors';
@@ -28,7 +29,7 @@ export default function LoginScreen({ navigation }) {
 
     setLoading(false);
     if (error) {
-      alert(error.message);
+      Alert.alert("Error", "Invalid credentials");
     } else {
       // Supabase listener in App.js will catch the session change and navigate automatically
       console.log('Logged in successfully!');
