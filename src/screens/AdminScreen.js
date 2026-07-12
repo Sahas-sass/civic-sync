@@ -1,14 +1,15 @@
-import React, { useState } from 'react';
-import { 
-  StyleSheet, 
-  Text, 
-  View, 
-  TouchableOpacity, 
-  ActivityIndicator, 
-  Alert,
-  SafeAreaView
-} from 'react-native';
 import * as DocumentPicker from 'expo-document-picker';
+import { useState } from 'react';
+import {
+    ActivityIndicator,
+    Alert,
+    Platform,
+    SafeAreaView,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View
+} from 'react-native';
 // Assuming you have your colors file, adjust the path if needed:
 // import { colors } from '../theme/colors'; 
 
@@ -18,13 +19,11 @@ export default function AdminScreen() {
 
   const handlePickAndUpload = async () => {
     try {
-      // 1. Open the phone's file browser (restricted to PDFs)
       const result = await DocumentPicker.getDocumentAsync({
         type: 'application/pdf',
         copyToCacheDirectory: true,
       });
 
-      // If the user closes the picker without selecting anything
       if (result.canceled || !result.assets) {
         return; 
       }
@@ -33,38 +32,52 @@ export default function AdminScreen() {
       setSelectedFileName(file.name);
       setIsUploading(true);
 
-      // 2. Prepare the file to be sent over the network
       const formData = new FormData();
-      formData.append('file', {
-        uri: file.uri,
-        name: file.name,
-        type: 'application/pdf',
-      });
-      formData.append('title', file.name);
 
-      // 3. Send it to your backend API
-      // NOTE: Replace this URL with your actual backend URL once Member 4 builds the API Gateway!
-      // If testing on a physical device, use your computer's local IP (e.g., http://192.168.1.5:8000/api/ingest)
-      const BACKEND_URL = 'http://YOUR_LOCAL_IP:8000/api/ingest'; 
+      // Ensure the title is always a string
+      const safeTitle = file.name ? String(file.name) : 'document.pdf';
+      formData.append('title', safeTitle);
 
+      if (Platform.OS === 'web') {
+        // WEB: Append the raw HTML5 File object directly
+        // Make sure we are accessing the '.file' property that Expo injects on web
+        if (file.file) {
+           formData.append('file', file.file);
+        } else {
+           throw new Error("File object is missing from the picker result on web.");
+        }
+      } else {
+        // MOBILE (iOS/Android): Use the URI formatting
+        formData.append('file', {
+          uri: file.uri,
+          name: safeTitle,
+          type: file.mimeType || 'application/pdf',
+        });
+      }
+
+      const BACKEND_URL = 'http://127.0.0.1:8000/api/ingest'; 
+
+      // Note: Do NOT manually set the 'Content-Type' header to 'multipart/form-data'. 
+      // The browser/fetch API must do this automatically so it can calculate the boundary string!
       const response = await fetch(BACKEND_URL, {
         method: 'POST',
         body: formData,
-        headers: {
-          'Content-Type': 'multipart/form-data',
-        },
+        // headers: {} <-- Leave headers completely empty!
       });
 
       if (response.ok) {
-        Alert.alert('Success!', 'The new legal document has been ingested by CivicSync AI.');
+        const jsonResponse = await response.json();
+        Alert.alert('Success!', jsonResponse.message || 'Document ingested.');
         setSelectedFileName(null);
       } else {
-        throw new Error('Upload failed. Check the backend server.');
+        const errorText = await response.text();
+        console.error("Backend Error Details:", errorText);
+        throw new Error(`Upload failed with status: ${response.status}`);
       }
 
     } catch (error) {
       console.error(error);
-      Alert.alert('Upload Error', 'Something went wrong while uploading the document.');
+      Alert.alert('Upload Error', error.message || 'Something went wrong while uploading.');
     } finally {
       setIsUploading(false);
     }
