@@ -55,7 +55,7 @@ export default function AdminScreen() {
         });
       }
 
-      const BACKEND_URL = 'http://127.0.0.1:8000/api/ingest'; 
+      const BACKEND_URL = 'https://civic-sync-0zyi.onrender.com/api/ingest'; 
 
       // Note: Do NOT manually set the 'Content-Type' header to 'multipart/form-data'. 
       // The browser/fetch API must do this automatically so it can calculate the boundary string!
