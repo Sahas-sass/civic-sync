@@ -36,7 +36,7 @@ export default function ProfileScreen() {
       setEmail(user.email || '');
 
       const { data, error, status } = await supabase
-        .from('Profiles')
+        .from('profiles')
         .select('full_name, nic_number, phone')
         .eq('id', user.id)
         .single();
@@ -78,7 +78,7 @@ export default function ProfileScreen() {
       }
 
       const { error } = await supabase
-        .from('Profiles')
+        .from('profiles')
         .upsert({
           id: user.id,
           full_name: name,
