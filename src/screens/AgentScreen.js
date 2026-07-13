@@ -3,78 +3,178 @@ import {
   StyleSheet, 
   Text, 
   View, 
-  TextInput, 
-  TouchableOpacity, 
   KeyboardAvoidingView, 
   Platform,
   FlatList,
-  ActivityIndicator
+  ActivityIndicator,
+  Alert,
+  Keyboard
 } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
 import { colors } from '../theme/colors';
+import { supabase } from '../services/supabaseClient';
+import { BACKEND_URL } from '../services/apiConfig';
+import MessageItem from '../components/MessageItem';
+import ChatInput from '../components/ChatInput';
+import AgentStatus from '../components/AgentStatus';
 
 export default function AgentScreen() {
   const [inputText, setInputText] = useState('');
-  const [messages, setMessages] = useState([
-    {
-      id: '1',
-      sender: 'ai',
-      text: 'Hello! I am your Civic AI. How can I help you navigate government processes today?',
-      type: 'message'
-    }
-  ]);
+  const [messages, setMessages] = useState([]);
   const [agentStatus, setAgentStatus] = useState(null); // Tracks the multi-step reasoning
+  const [loadingHistory, setLoadingHistory] = useState(true);
+  const [keyboardVisible, setKeyboardVisible] = useState(false);
   const flatListRef = useRef();
 
-  // This simulates the Agentic workflow for the UI layout test
-  const handleSend = () => {
+  useEffect(() => {
+    fetchChatHistory();
+
+    const showSubscription = Keyboard.addListener(
+      Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow',
+      () => setKeyboardVisible(true)
+    );
+    const hideSubscription = Keyboard.addListener(
+      Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide',
+      () => setKeyboardVisible(false)
+    );
+
+    return () => {
+      showSubscription.remove();
+      hideSubscription.remove();
+    };
+  }, []);
+
+  const fetchChatHistory = async () => {
+    try {
+      setLoadingHistory(true);
+      const { data: { user }, error: authError } = await supabase.auth.getUser();
+      if (authError || !user) throw new Error('Not authenticated');
+
+      const { data, error } = await supabase
+        .from('ChatMessages')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: true });
+
+      if (error) throw error;
+
+      if (data && data.length > 0) {
+        setMessages(data);
+      } else {
+        setMessages([
+          {
+            id: 'default-greeting',
+            sender: 'ai',
+            text: 'Hello! I am your Civic AI. How can I help you navigate government processes today?',
+            type: 'message'
+          }
+        ]);
+      }
+    } catch (error) {
+      console.log('Error loading chat history:', error.message);
+    } finally {
+      setLoadingHistory(false);
+    }
+  };
+
+  const handleSend = async () => {
     if (inputText.trim() === '') return;
 
-    const userMsg = { id: Date.now().toString(), sender: 'user', text: inputText, type: 'message' };
-    setMessages((prev) => [...prev, userMsg]);
+    const userText = inputText.trim();
     setInputText('');
 
-    // Simulate Agent Reasoning Steps (This visually proves to judges it's not just a chatbot)
-    setAgentStatus('Parsing intent...');
-    
-    setTimeout(() => {
-      setAgentStatus('Querying legal vector database...');
-    }, 1500);
+    try {
+      const { data: { user }, error: authError } = await supabase.auth.getUser();
+      if (authError || !user) throw new Error('Not authenticated');
 
-    setTimeout(() => {
-      setAgentStatus('Formulating step-by-step roadmap...');
-    }, 3000);
+      const userMsgId = Date.now().toString();
+      const userMsg = { id: userMsgId, sender: 'user', text: userText, type: 'message' };
+      setMessages((prev) => [...prev, userMsg]);
 
-    setTimeout(() => {
+      const { error: saveUserErr } = await supabase
+        .from('ChatMessages')
+        .insert({
+          user_id: user.id,
+          sender: 'user',
+          text: userText
+        });
+      if (saveUserErr) console.log('Error saving user message:', saveUserErr.message);
+
+      setAgentStatus('Searching legal database...');
+
+      const response = await fetch(`${BACKEND_URL}/api/chat`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          message_text: userText,
+          user_id: user.id
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error(`Server returned status: ${response.status}`);
+      }
+
+      const json = await response.json();
+      const aiReplyText = json.chat_reply || 'I could not process a response.';
+
       setAgentStatus(null);
-      const aiResponse = { 
-        id: (Date.now() + 1).toString(), 
-        sender: 'ai', 
-        text: 'I have analyzed the regulations. Here is your personalized checklist for registering your business.', 
-        type: 'message' 
+
+      const { error: saveAiErr } = await supabase
+        .from('ChatMessages')
+        .insert({
+          user_id: user.id,
+          sender: 'ai',
+          text: aiReplyText
+        });
+      if (saveAiErr) console.log('Error saving AI response:', saveAiErr.message);
+
+      const aiMsg = { id: (Date.now() + 1).toString(), sender: 'ai', text: aiReplyText, type: 'message' };
+      setMessages((prev) => [...prev, aiMsg]);
+
+      if (json.roadmap_trigger) {
+        setAgentStatus('Generating interactive roadmap...');
+        const { error: rpcError } = await supabase.rpc('create_roadmap_from_json', {
+          p_user_id: user.id,
+          p_title: json.roadmap_trigger.title,
+          p_description: json.roadmap_trigger.description,
+          p_steps: json.roadmap_trigger.steps
+        });
+        setAgentStatus(null);
+        if (rpcError) {
+          console.log('Error calling create_roadmap_from_json RPC:', rpcError.message);
+        } else {
+          Alert.alert('New Checklist Generated', `A personalized roadmap: "${json.roadmap_trigger.title}" has been created for you! Check it in the Roadmaps tab.`);
+        }
+      }
+
+    } catch (error) {
+      setAgentStatus(null);
+      console.log('Chat API Error:', error.message);
+      
+      const errMsg = {
+        id: (Date.now() + 2).toString(),
+        sender: 'ai',
+        text: "I'm having trouble connecting to the civic database right now. Please try again in a moment.",
+        type: 'message'
       };
-      // In the real implementation, this response will trigger the Roadmap UI generation
-      setMessages((prev) => [...prev, aiResponse]);
-    }, 4500);
+      setMessages((prev) => [...prev, errMsg]);
+    }
   };
 
   const renderItem = ({ item }) => {
-    const isUser = item.sender === 'user';
+    return <MessageItem item={item} />;
+  };
+
+  if (loadingHistory) {
     return (
-      <View style={[styles.messageRow, isUser ? styles.userRow : styles.aiRow]}>
-        {!isUser && (
-          <View style={styles.aiAvatar}>
-            <Ionicons name="sparkles" size={16} color={colors.surface} />
-          </View>
-        )}
-        <View style={[styles.messageBubble, isUser ? styles.userBubble : styles.aiBubble]}>
-          <Text style={[styles.messageText, isUser ? styles.userText : styles.aiText]}>
-            {item.text}
-          </Text>
-        </View>
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color={colors.primaryBlue} />
+        <Text style={styles.loadingText}>Loading conversation history...</Text>
       </View>
     );
-  };
+  }
 
   return (
     <KeyboardAvoidingView 
@@ -82,13 +182,11 @@ export default function AgentScreen() {
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}
     >
-      {/* Header */}
       <View style={styles.header}>
         <Text style={styles.headerTitle}>CivicSync AI</Text>
         <Text style={styles.headerSubtitle}>Legal Navigator Assistant</Text>
       </View>
 
-      {/* Chat History */}
       <FlatList
         ref={flatListRef}
         data={messages}
@@ -98,32 +196,14 @@ export default function AgentScreen() {
         onContentSizeChange={() => flatListRef.current?.scrollToEnd({ animated: true })}
       />
 
-      {/* Multi-Step Agent Status Indicator */}
-      {agentStatus && (
-        <View style={styles.agentStatusContainer}>
-          <ActivityIndicator size="small" color={colors.primaryBlue} />
-          <Text style={styles.agentStatusText}>{agentStatus}</Text>
-        </View>
-      )}
+      <AgentStatus status={agentStatus} />
 
-      {/* Input Area */}
-      <View style={styles.inputContainer}>
-        <TextInput
-          style={styles.textInput}
-          placeholder="Ask a legal or civic question..."
-          placeholderTextColor={colors.textLight}
-          value={inputText}
-          onChangeText={setInputText}
-          multiline
-        />
-        <TouchableOpacity 
-          style={[styles.sendButton, !inputText.trim() && styles.sendButtonDisabled]} 
-          onPress={handleSend}
-          disabled={!inputText.trim()}
-        >
-          <Ionicons name="send" size={20} color={colors.surface} />
-        </TouchableOpacity>
-      </View>
+      <ChatInput 
+        value={inputText}
+        onChangeText={setInputText}
+        onSend={handleSend}
+        keyboardVisible={keyboardVisible}
+      />
     </KeyboardAvoidingView>
   );
 }
@@ -132,6 +212,17 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: colors.background,
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: colors.background,
+  },
+  loadingText: {
+    fontSize: 14,
+    color: colors.textLight,
+    marginTop: 12,
   },
   header: {
     backgroundColor: colors.surface,
@@ -159,104 +250,5 @@ const styles = StyleSheet.create({
   chatContainer: {
     padding: 16,
     paddingBottom: 20,
-  },
-  messageRow: {
-    flexDirection: 'row',
-    marginBottom: 16,
-    alignItems: 'flex-end',
-  },
-  userRow: {
-    justifyContent: 'flex-end',
-  },
-  aiRow: {
-    justifyContent: 'flex-start',
-  },
-  aiAvatar: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
-    backgroundColor: colors.primaryBlue,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: 8,
-  },
-  messageBubble: {
-    maxWidth: '75%',
-    padding: 14,
-    borderRadius: 20,
-  },
-  userBubble: {
-    backgroundColor: colors.primaryBlue,
-    borderBottomRightRadius: 4,
-  },
-  aiBubble: {
-    backgroundColor: colors.surface,
-    borderWidth: 1,
-    borderColor: '#E2E8F0',
-    borderBottomLeftRadius: 4,
-  },
-  messageText: {
-    fontSize: 15,
-    lineHeight: 22,
-  },
-  userText: {
-    color: colors.surface,
-  },
-  aiText: {
-    color: colors.textDark,
-  },
-  agentStatusContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#EFF6FF',
-    paddingVertical: 10,
-    paddingHorizontal: 16,
-    marginHorizontal: 16,
-    borderRadius: 12,
-    marginBottom: 8,
-    borderWidth: 1,
-    borderColor: '#DBEAFE',
-  },
-  agentStatusText: {
-    marginLeft: 12,
-    fontSize: 13,
-    color: colors.primaryBlue,
-    fontWeight: '500',
-    fontStyle: 'italic',
-  },
-  inputContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    backgroundColor: colors.surface,
-    borderTopWidth: 1,
-    borderTopColor: '#E2E8F0',
-    marginBottom: Platform.OS === 'ios' ? 20 : 0, // Padding for safe area
-  },
-  textInput: {
-    flex: 1,
-    backgroundColor: colors.background,
-    borderWidth: 1,
-    borderColor: '#E2E8F0',
-    borderRadius: 20,
-    paddingHorizontal: 16,
-    paddingTop: 12,
-    paddingBottom: 12,
-    fontSize: 15,
-    maxHeight: 100,
-    color: colors.textDark,
-  },
-  sendButton: {
-    backgroundColor: colors.primaryBlue,
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginLeft: 12,
-  },
-  sendButtonDisabled: {
-    backgroundColor: '#94A3B8',
   },
 });
