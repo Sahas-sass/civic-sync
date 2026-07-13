@@ -380,11 +380,11 @@ Stores:
 
 | Member | Responsibility |
 |---------|----------------|
-| **Member 1** | Identity & Security (Authentication & User Profile) |
-| **Member 2** | Conversational AI Interface (AI Assistant) |
-| **Member 3** | Dynamic Roadmap Engine |
-| **Member 4** | Document Vault & Auto-fill Forms |
-| **Member 5** | Vector Database & RAG Pipeline |
+| **Chirath** | Identity & Security (Authentication & User Profile) |
+| **Poojani** | Conversational AI Interface (AI Assistant) |
+| **Osal** | Dynamic Roadmap Engine |
+| **Rashmi** | Document Vault & Auto-fill Forms |
+| **Sahas** | Vector Database & RAG Pipeline |
 
 ---
 
