@@ -9,6 +9,7 @@
     "@react-navigation/native": "^6.1.17",
     "@react-navigation/native-stack": "^6.9.26",
     "@supabase/supabase-js": "^2.40.0",
+    "babel-preset-expo": "~54.0.10",
     "expo": "~54.0.0",
     "expo-blur": "~15.0.8",
     "expo-constants": "~18.0.13",
