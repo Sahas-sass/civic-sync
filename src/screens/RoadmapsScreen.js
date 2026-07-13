@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   StyleSheet, 
   Text, 
@@ -7,10 +7,13 @@ import {
   TouchableOpacity, 
   Platform,
   LayoutAnimation,
-  UIManager
+  UIManager,
+  ActivityIndicator,
+  Alert
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { colors } from '../theme/colors';
+import { supabase } from '../services/supabaseClient';
 
 // Enable smooth accordion animations for Android
 if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
@@ -18,56 +21,110 @@ if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental
 }
 
 export default function RoadmapsScreen() {
+  const [roadmaps, setRoadmaps] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [expandedId, setExpandedId] = useState(null);
 
-  // Mock data representing the AI-generated execution plans
-  const roadmaps = [
-    {
-      id: '1',
-      title: 'Small Business Registration (BR)',
-      description: 'Official process for sole proprietorship registration.',
-      progress: 0.66,
-      steps: [
-        { id: 's1', title: 'Name Approval', completed: true, detail: 'Submit 3 proposed names to the Divisional Secretariat.' },
-        { id: 's2', title: 'Form Submission', completed: true, detail: 'Fill and submit Form 1 with GS certification.' },
-        { id: 's3', title: 'Payment & Collection', completed: false, detail: 'Pay the registration fee and collect the BR certificate.' },
-      ]
-    },
-    {
-      id: '2',
-      title: 'National Identity Card Replacement',
-      description: 'Process for a lost or damaged identification card.',
-      progress: 0.25,
-      steps: [
-        { id: 'n1', title: 'Police Complaint', completed: true, detail: 'Obtain a certified copy of the police report.' },
-        { id: 'n2', title: 'Grama Niladhari Certificate', completed: false, detail: 'Get the application certified by the local GS.' },
-        { id: 'n3', title: 'Photo Studio', completed: false, detail: 'Obtain ICAO standard photographs with receipt.' },
-        { id: 'n4', title: 'Submission at DRP', completed: false, detail: 'Submit all documents to the Department of Registration of Persons.' },
-      ]
+  useEffect(() => {
+    fetchRoadmaps();
+  }, []);
+
+  const fetchRoadmaps = async () => {
+    try {
+      setLoading(true);
+      const { data: { user }, error: authError } = await supabase.auth.getUser();
+      if (authError || !user) {
+        throw new Error('Not authenticated');
+      }
+
+      // Query Roadmaps with nested relational Roadmap_Steps
+      const { data, error } = await supabase
+        .from('Roadmaps')
+        .select('*, Roadmap_Steps(*)')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false })
+        .order('step_order', { foreignTable: 'Roadmap_Steps', ascending: true });
+
+      if (error) throw error;
+
+      // Map rows and compute progress percentage dynamically: completed steps / total steps
+      const processed = (data || []).map(roadmap => {
+        const steps = roadmap.Roadmap_Steps || [];
+        const completedCount = steps.filter(s => s.is_completed).length;
+        const progress = steps.length > 0 ? completedCount / steps.length : 0;
+        return { ...roadmap, progress };
+      });
+
+      setRoadmaps(processed);
+    } catch (error) {
+      console.log('Error fetching roadmaps:', error.message);
+    } finally {
+      setLoading(false);
     }
-  ];
+  };
 
   const toggleExpand = (id) => {
-    // Triggers a smooth ease-in/ease-out animation when the state changes
     LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
     setExpandedId(expandedId === id ? null : id);
   };
 
-  const renderStep = (step, index, isLast) => (
+  const toggleStep = async (stepId, currentStatus, roadmapId) => {
+    // 1. Optimistic Update (instant UI response)
+    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+    setRoadmaps(prevRoadmaps => 
+      prevRoadmaps.map(roadmap => {
+        if (roadmap.id !== roadmapId) return roadmap;
+        
+        const updatedSteps = (roadmap.Roadmap_Steps || []).map(step => {
+          if (step.id === stepId) {
+            return { ...step, is_completed: !currentStatus };
+          }
+          return step;
+        });
+
+        const completedCount = updatedSteps.filter(s => s.is_completed).length;
+        const totalCount = updatedSteps.length;
+        const progress = totalCount > 0 ? completedCount / totalCount : 0;
+
+        return { ...roadmap, Roadmap_Steps: updatedSteps, progress };
+      })
+    );
+
+    // 2. Silent database update in background
+    try {
+      const { error } = await supabase
+        .from('Roadmap_Steps')
+        .update({ is_completed: !currentStatus })
+        .eq('id', stepId);
+      
+      if (error) throw error;
+    } catch (error) {
+      console.log('Error updating step in database, reverting state:', error.message);
+      Alert.alert('Update Failed', 'Could not sync checklist status with database. Reverting.');
+      fetchRoadmaps(); // Revert back to database state
+    }
+  };
+
+  const renderStep = (step, index, isLast, roadmapId) => (
     <View key={step.id} style={styles.stepContainer}>
       <View style={styles.stepIndicator}>
-        <View style={[styles.stepCircle, step.completed && styles.stepCircleCompleted]}>
-          {step.completed ? (
-            <Ionicons name="checkmark" size={12} color={colors.surface} />
-          ) : (
-            <Text style={styles.stepNumber}>{index + 1}</Text>
-          )}
-        </View>
+        <TouchableOpacity 
+          activeOpacity={0.7} 
+          onPress={() => toggleStep(step.id, step.is_completed, roadmapId)}
+        >
+          <View style={[styles.stepCircle, step.is_completed && styles.stepCircleCompleted]}>
+            {step.is_completed ? (
+              <Ionicons name="checkmark" size={12} color={colors.surface} />
+            ) : (
+              <Text style={styles.stepNumber}>{index + 1}</Text>
+            )}
+          </View>
+        </TouchableOpacity>
         {/* Only show the connecting line if it's not the final step */}
-        {!isLast && <View style={[styles.stepLine, step.completed && styles.stepLineCompleted]} />}
+        {!isLast && <View style={[styles.stepLine, step.is_completed && styles.stepLineCompleted]} />}
       </View>
       <View style={styles.stepContent}>
-        <Text style={[styles.stepTitle, step.completed && styles.stepTitleCompleted]}>
+        <Text style={[styles.stepTitle, step.is_completed && styles.stepTitleCompleted]}>
           {step.title}
         </Text>
         <Text style={styles.stepDetail}>{step.detail}</Text>
@@ -77,6 +134,7 @@ export default function RoadmapsScreen() {
 
   const renderRoadmap = ({ item }) => {
     const isExpanded = expandedId === item.id;
+    const steps = item.Roadmap_Steps || [];
     
     return (
       <View style={styles.card}>
@@ -108,12 +166,45 @@ export default function RoadmapsScreen() {
         {isExpanded && (
           <View style={styles.expandedContent}>
             <View style={styles.divider} />
-            {item.steps.map((step, index) => renderStep(step, index, index === item.steps.length - 1))}
+            {steps.map((step, index) => renderStep(step, index, index === steps.length - 1, item.id))}
           </View>
         )}
       </View>
     );
   };
+
+  // Sort completed roadmaps (100% progress) to the bottom of the list
+  const sortedRoadmaps = [...roadmaps].sort((a, b) => {
+    if (a.progress === 1 && b.progress < 1) return 1;
+    if (a.progress < 1 && b.progress === 1) return -1;
+    return b.created_at.localeCompare(a.created_at);
+  });
+
+  if (loading && roadmaps.length === 0) {
+    return (
+      <View style={styles.centerContainer}>
+        <ActivityIndicator size="large" color={colors.primaryBlue} />
+      </View>
+    );
+  }
+
+  if (roadmaps.length === 0) {
+    return (
+      <View style={styles.container}>
+        <View style={styles.header}>
+          <Text style={styles.headerTitle}>Active Roadmaps</Text>
+          <Text style={styles.headerSubtitle}>Your personalized civic checklists</Text>
+        </View>
+        <View style={styles.emptyContainer}>
+          <Ionicons name="clipboard-outline" size={80} color="#CBD5E1" />
+          <Text style={styles.emptyTitle}>No Roadmaps Yet</Text>
+          <Text style={styles.emptyText}>
+            Chat with CivicSync to generate your first roadmap.
+          </Text>
+        </View>
+      </View>
+    );
+  }
 
   return (
     <View style={styles.container}>
@@ -123,7 +214,7 @@ export default function RoadmapsScreen() {
       </View>
       
       <FlatList
-        data={roadmaps}
+        data={sortedRoadmaps}
         keyExtractor={item => item.id}
         renderItem={renderRoadmap}
         contentContainerStyle={styles.listContainer}
@@ -136,6 +227,12 @@ export default function RoadmapsScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    backgroundColor: colors.background,
+  },
+  centerContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
     backgroundColor: colors.background,
   },
   header: {
@@ -224,7 +321,7 @@ const styles = StyleSheet.create({
   },
   stepContainer: {
     flexDirection: 'row',
-    marginBottom: 4, // Tightened margin as the line creates vertical rhythm
+    marginBottom: 4,
   },
   stepIndicator: {
     alignItems: 'center',
@@ -264,7 +361,7 @@ const styles = StyleSheet.create({
   },
   stepContent: {
     flex: 1,
-    paddingBottom: 20, // Spacing before the next step
+    paddingBottom: 20,
   },
   stepTitle: {
     fontSize: 15,
@@ -280,5 +377,25 @@ const styles = StyleSheet.create({
     color: colors.textLight,
     marginTop: 4,
     lineHeight: 18,
+  },
+  emptyContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 40,
+    paddingBottom: 80,
+  },
+  emptyTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: colors.textDark,
+    marginTop: 20,
+    marginBottom: 8,
+  },
+  emptyText: {
+    fontSize: 14,
+    color: colors.textLight,
+    textAlign: 'center',
+    lineHeight: 20,
   },
 });
