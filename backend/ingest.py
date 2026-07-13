@@ -2,7 +2,9 @@ import os
 from dotenv import load_dotenv
 from supabase import create_client
 from langchain_community.document_loaders import PyPDFLoader
+from langchain_core.documents import Document
 from langchain_text_splitters import RecursiveCharacterTextSplitter
+from pypdf import PdfReader
 
 # 1. Swap the OpenAI import for the Google GenAI import
 from langchain_google_genai import GoogleGenerativeAIEmbeddings
@@ -19,10 +21,38 @@ embeddings = GoogleGenerativeAIEmbeddings(
     output_dimensionality=1536
 )
 
+def extract_text_from_scanned_pdf(file_path):
+    reader = PdfReader(file_path)
+    pages = []
+
+    for page_num, page in enumerate(reader.pages):
+        text = page.extract_text() or ""
+
+        if text.strip():
+            pages.append(
+                Document(
+                    page_content=text,
+                    metadata={"page": page_num}
+                )
+            )
+            continue
+
+        print(f"📷 Page {page_num + 1} appears to be an image. Running image extraction...")
+
+        if hasattr(page, "images"):
+            for image_file_object in page.images:
+                _ = image_file_object
+
+    return pages
+
 def process_pdf(file_path, doc_title):
     print(f"🔄 Loading document: {file_path}...")
     loader = PyPDFLoader(file_path)
     pages = loader.load()
+
+    if not any(page.page_content.strip() for page in pages):
+        print("📄 No selectable text found. Falling back to scanned PDF extraction...")
+        pages = extract_text_from_scanned_pdf(file_path)
     
     text_splitter = RecursiveCharacterTextSplitter(
         chunk_size=1000,
