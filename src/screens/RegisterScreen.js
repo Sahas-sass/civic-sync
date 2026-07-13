@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import { 
-  StyleSheet, 
   Text, 
   View, 
   TextInput, 
@@ -11,7 +10,6 @@ import {
   ScrollView,
   Alert
 } from 'react-native';
-import { colors } from '../theme/colors';
 import { supabase } from '../services/supabaseClient';
 
 export default function RegisterScreen({ navigation }) {
@@ -32,9 +30,6 @@ export default function RegisterScreen({ navigation }) {
       return;
     }
 
-    // Validate Sri Lankan NIC formats:
-    // Old format: 9 digits followed by 'V' or 'X' (case-insensitive)
-    // New format: 12 digits
     const nicRegex = /^([0-9]{9}[vVxX]|[0-9]{12})$/;
     if (!nicRegex.test(nic.trim())) {
       Alert.alert('Error', 'Invalid NIC format. Must be either 9 digits followed by V/X, or 12 digits.');
@@ -64,7 +59,6 @@ export default function RegisterScreen({ navigation }) {
     
     setLoading(true);
     
-    // Supabase Authentication
     const { data, error } = await supabase.auth.signUp({
       email: email,
       password: password,
@@ -82,7 +76,6 @@ export default function RegisterScreen({ navigation }) {
       Alert.alert('Error', error.message);
     } else {
       Alert.alert('Success', 'Registration successful! Please check your email to verify your account.');
-      // Optionally navigate back to login or auto-login depending on Supabase settings
       navigation.navigate('Login');
     }
   }
@@ -90,49 +83,53 @@ export default function RegisterScreen({ navigation }) {
   return (
     <KeyboardAvoidingView 
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'} 
-      style={styles.container}
+      className="flex-1 bg-background"
     >
-      <ScrollView contentContainerStyle={styles.scrollContainer} showsVerticalScrollIndicator={false}>
-        <View style={styles.headerContainer}>
-          <Text style={styles.title}>Create Account</Text>
-          <Text style={styles.subtitle}>Join CivicSync to automate your legal processes</Text>
+      <ScrollView 
+        contentContainerStyle={{ flexGrow: 1, justifyContent: 'center' }} 
+        className="px-6 py-10"
+        showsVerticalScrollIndicator={false}
+      >
+        <View className="mb-10 items-center">
+          <Text className="text-3xl font-bold text-primaryBlue">Create Account</Text>
+          <Text className="text-[15px] text-[#757575] mt-2 text-center">Join CivicSync to automate your legal processes</Text>
         </View>
 
-        <View style={styles.formContainer}>
-          <Text style={styles.inputLabel}>Full Name</Text>
+        <View className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
+          <Text className="text-sm font-semibold text-textDark mb-2">Full Name</Text>
           <TextInput
-            style={styles.input}
+            className="border border-[#E2E8F0] rounded-lg p-3 text-base text-textDark mb-5 bg-background"
             placeholder="John Doe"
-            placeholderTextColor={colors.textLight}
+            placeholderTextColor="#757575"
             value={fullName}
             onChangeText={setFullName}
           />
 
-          <Text style={styles.inputLabel}>National Identity Card (NIC)</Text>
+          <Text className="text-sm font-semibold text-textDark mb-2">National Identity Card (NIC)</Text>
           <TextInput
-            style={styles.input}
+            className="border border-[#E2E8F0] rounded-lg p-3 text-base text-textDark mb-5 bg-background"
             placeholder="e.g. 199912345678"
-            placeholderTextColor={colors.textLight}
+            placeholderTextColor="#757575"
             value={nic}
             onChangeText={setNic}
           />
 
-          <Text style={styles.inputLabel}>Email Address</Text>
+          <Text className="text-sm font-semibold text-textDark mb-2">Email Address</Text>
           <TextInput
-            style={styles.input}
+            className="border border-[#E2E8F0] rounded-lg p-3 text-base text-textDark mb-5 bg-background"
             placeholder="Enter your email"
-            placeholderTextColor={colors.textLight}
+            placeholderTextColor="#757575"
             value={email}
             onChangeText={setEmail}
             autoCapitalize="none"
             keyboardType="email-address"
           />
 
-          <Text style={styles.inputLabel}>Password</Text>
+          <Text className="text-sm font-semibold text-textDark mb-2">Password</Text>
           <TextInput
-            style={styles.input}
+            className="border border-[#E2E8F0] rounded-lg p-3 text-base text-textDark mb-5 bg-background"
             placeholder="Create a strong password"
-            placeholderTextColor={colors.textLight}
+            placeholderTextColor="#757575"
             value={password}
             onChangeText={setPassword}
             secureTextEntry
@@ -140,103 +137,27 @@ export default function RegisterScreen({ navigation }) {
           />
 
           <TouchableOpacity 
-            style={styles.button} 
+            className="bg-primaryBlue rounded-lg p-4 items-center mt-2.5"
             onPress={handleRegister}
             disabled={loading}
           >
             {loading ? (
-              <ActivityIndicator color={colors.surface} />
+              <ActivityIndicator color="#ffffff" />
             ) : (
-              <Text style={styles.buttonText}>Sign Up</Text>
+              <Text className="text-white text-base font-bold">Sign Up</Text>
             )}
           </TouchableOpacity>
 
           <TouchableOpacity 
-            style={styles.switchLink} 
+            className="mt-5 items-center"
             onPress={() => navigation.navigate('Login')}
           >
-            <Text style={styles.switchText}>Already have an account? <Text style={styles.switchTextBold}>Log in</Text></Text>
+            <Text className="text-[#757575] text-sm">
+              Already have an account? <Text className="text-[#0066cc] font-bold">Log in</Text>
+            </Text>
           </TouchableOpacity>
         </View>
       </ScrollView>
     </KeyboardAvoidingView>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: colors.background,
-  },
-  scrollContainer: {
-    flexGrow: 1,
-    justifyContent: 'center',
-    paddingHorizontal: 24,
-    paddingVertical: 40,
-  },
-  headerContainer: {
-    marginBottom: 40,
-    alignItems: 'center',
-  },
-  title: {
-    fontSize: 32,
-    fontWeight: 'bold',
-    color: colors.primaryBlue,
-  },
-  subtitle: {
-    fontSize: 15,
-    color: colors.textLight,
-    marginTop: 8,
-    textAlign: 'center',
-  },
-  formContainer: {
-    backgroundColor: colors.surface,
-    padding: 24,
-    borderRadius: 16,
-    shadowColor: colors.primaryBlue,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.05,
-    shadowRadius: 12,
-    elevation: 3,
-  },
-  inputLabel: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: colors.textDark,
-    marginBottom: 8,
-  },
-  input: {
-    borderWidth: 1,
-    borderColor: '#E2E8F0',
-    borderRadius: 8,
-    padding: 12,
-    fontSize: 16,
-    color: colors.textDark,
-    marginBottom: 20,
-    backgroundColor: colors.background,
-  },
-  button: {
-    backgroundColor: colors.primaryBlue,
-    borderRadius: 8,
-    padding: 16,
-    alignItems: 'center',
-    marginTop: 10,
-  },
-  buttonText: {
-    color: colors.surface,
-    fontSize: 16,
-    fontWeight: 'bold',
-  },
-  switchLink: {
-    marginTop: 20,
-    alignItems: 'center',
-  },
-  switchText: {
-    color: colors.textLight,
-    fontSize: 14,
-  },
-  switchTextBold: {
-    color: colors.secondaryBlue,
-    fontWeight: 'bold',
-  },
-});

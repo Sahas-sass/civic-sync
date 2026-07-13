@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import { 
-  StyleSheet, 
   Text, 
   View, 
   TextInput, 
@@ -9,7 +8,6 @@ import {
   Alert 
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { colors } from '../theme/colors';
 import { supabase } from '../services/supabaseClient';
 
 export default function PasswordChangeForm() {
@@ -44,37 +42,37 @@ export default function PasswordChangeForm() {
   };
 
   return (
-    <View style={styles.passwordChangeSection}>
+    <View className="border-t border-[#E2E8F0] mt-6 pt-4">
       <TouchableOpacity 
-        style={styles.toggleRow} 
+        className="flex-row justify-between items-center" 
         onPress={() => setShowPasswordChange(!showPasswordChange)}
       >
-        <Text style={styles.sectionHeaderTitle}>Security & Password</Text>
+        <Text className="text-[15px] font-bold text-textDark">Security & Password</Text>
         <Ionicons 
           name={showPasswordChange ? "chevron-up" : "chevron-down"} 
           size={20} 
-          color={colors.textLight} 
+          color="#757575" 
         />
       </TouchableOpacity>
 
       {showPasswordChange && (
-        <View style={styles.formContainer}>
-          <Text style={styles.inputLabel}>New Password</Text>
+        <View className="mt-4">
+          <Text className="text-[13px] font-semibold text-textDark mb-2">New Password</Text>
           <TextInput
-            style={styles.input}
+            className="border border-[#E2E8F0] rounded-lg p-3 text-[15px] text-textDark bg-white mb-4"
             placeholder="Enter new password"
-            placeholderTextColor={colors.textLight}
+            placeholderTextColor="#757575"
             value={newPassword}
             onChangeText={setNewPassword}
             secureTextEntry
             autoCapitalize="none"
           />
 
-          <Text style={styles.inputLabel}>Confirm New Password</Text>
+          <Text className="text-[13px] font-semibold text-textDark mb-2">Confirm New Password</Text>
           <TextInput
-            style={styles.input}
+            className="border border-[#E2E8F0] rounded-lg p-3 text-[15px] text-textDark bg-white mb-4"
             placeholder="Confirm new password"
-            placeholderTextColor={colors.textLight}
+            placeholderTextColor="#757575"
             value={confirmPassword}
             onChangeText={setConfirmPassword}
             secureTextEntry
@@ -82,14 +80,14 @@ export default function PasswordChangeForm() {
           />
 
           <TouchableOpacity 
-            style={styles.saveButton} 
+            className="bg-primaryBlue rounded-lg p-3.5 items-center mt-2" 
             onPress={handleChangePassword}
             disabled={updatingPassword}
           >
             {updatingPassword ? (
-              <ActivityIndicator color={colors.surface} />
+              <ActivityIndicator color="#ffffff" />
             ) : (
-              <Text style={styles.saveButtonText}>Update Password</Text>
+              <Text className="text-white text-[15px] font-bold">Update Password</Text>
             )}
           </TouchableOpacity>
         </View>
@@ -97,53 +95,3 @@ export default function PasswordChangeForm() {
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  passwordChangeSection: {
-    borderTopWidth: 1,
-    borderTopColor: '#E2E8F0',
-    marginTop: 24,
-    paddingTop: 16,
-  },
-  toggleRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  sectionHeaderTitle: {
-    fontSize: 15,
-    fontWeight: '700',
-    color: colors.textDark,
-  },
-  formContainer: {
-    marginTop: 16,
-  },
-  inputLabel: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: colors.textDark,
-    marginBottom: 8,
-  },
-  input: {
-    borderWidth: 1,
-    borderColor: '#E2E8F0',
-    borderRadius: 8,
-    padding: 12,
-    fontSize: 15,
-    color: colors.textDark,
-    backgroundColor: colors.surface,
-    marginBottom: 16,
-  },
-  saveButton: {
-    backgroundColor: colors.secondaryBlue,
-    borderRadius: 8,
-    padding: 14,
-    alignItems: 'center',
-    marginTop: 8,
-  },
-  saveButtonText: {
-    color: colors.surface,
-    fontSize: 15,
-    fontWeight: 'bold',
-  },
-});

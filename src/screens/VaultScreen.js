@@ -2,13 +2,11 @@ import React, { useState } from 'react';
 import {
   FlatList,
   Platform,
-  StyleSheet,
   Text,
   TouchableOpacity,
   View
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { colors } from '../theme/colors';
 
 const initialDocuments = [
   {
@@ -41,56 +39,59 @@ export default function VaultScreen({ navigation }) {
   const [documents, setDocuments] = useState(initialDocuments);
 
   const renderDocument = ({ item }) => (
-    <View style={styles.docCard}>
-      <View style={styles.iconWrapper}>
+    <View className="bg-white rounded-2xl p-4 mb-3 flex-row items-center border border-[#E2E8F0]">
+      <View className="w-[50px] h-[50px] rounded-xl bg-[#F8FAFC] justify-center items-center mr-4">
         <Ionicons 
           name={item.title.includes('.pdf') ? "document-text" : "image"} 
           size={28} 
-          color={colors.primaryBlue} 
+          color="#0066cc" 
         />
       </View>
       
-      <View style={styles.docInfo}>
-        <Text style={styles.docTitle} numberOfLines={1} ellipsizeMode="middle">
+      <View className="flex-1 justify-center">
+        <Text className="text-[15px] font-semibold text-textDark mb-1" numberOfLines={1} ellipsizeMode="middle">
           {item.title}
         </Text>
-        <Text style={styles.docMeta}>
+        <Text className="text-xs text-textLight mb-2">
           {item.type} • {item.date} • {item.size}
         </Text>
         
         {/* Status Badge */}
-        <View style={styles.statusRow}>
-          <View style={[styles.statusDot, item.isReady ? styles.dotReady : styles.dotPending]} />
-          <Text style={item.isReady ? styles.statusTextReady : styles.statusTextPending}>
+        <View className="flex-row items-center">
+          <View className={`w-2 h-2 rounded-full mr-1.5 ${item.isReady ? 'bg-[#10B981]' : 'bg-[#F59E0B]'}`} />
+          <Text className={`text-xs font-medium ${item.isReady ? 'text-[#10B981]' : 'text-[#F59E0B]'}`}>
             {item.isReady ? 'Ready to Print/Submit' : 'Action Required'}
           </Text>
         </View>
       </View>
 
-      <TouchableOpacity style={styles.actionButton}>
-        <Ionicons name="download-outline" size={22} color={colors.textDark} />
+      <TouchableOpacity className="p-2 ml-2">
+        <Ionicons name="download-outline" size={22} color="#1a1a1a" />
       </TouchableOpacity>
     </View>
   );
 
   return (
-    <View style={styles.container}>
-      <View style={styles.header}>
-        <Text style={styles.headerTitle}>Document Vault</Text>
-        <Text style={styles.headerSubtitle}>Your encrypted civic files and ID scans</Text>
+    <View className="flex-1 bg-background">
+      <View 
+        className="bg-white pb-4 px-6 border-b border-[#E2E8F0]"
+        style={{ paddingTop: Platform.OS === 'ios' ? 50 : 30 }}
+      >
+        <Text className="text-xl font-bold text-primaryBlue">Document Vault</Text>
+        <Text className="text-sm text-textLight mt-1">Your encrypted civic files and ID scans</Text>
       </View>
 
       {/* New Admin Navigation Button */}
       <TouchableOpacity 
-        style={styles.adminTriggerButton} 
+        className="bg-white border border-[#E2E8F0] border-dashed rounded-xl p-4 mx-5 mt-5 mb-2 shadow-sm"
         onPress={() => navigation.navigate('Admin')}
         activeOpacity={0.8}
       >
-        <View style={styles.buttonFlexRow}>
-          <Text style={styles.plusIcon}>➕</Text>
-          <View style={styles.buttonTextContainer}>
-            <Text style={styles.adminButtonText}>Add Knowledge Documents</Text>
-            <Text style={styles.adminButtonSubtext}>Train the AI on new government rules</Text>
+        <View className="flex-row items-center">
+          <Text className="text-[20px] mr-3">➕</Text>
+          <View className="flex-1">
+            <Text className="text-base font-semibold text-primaryBlue">Add Knowledge Documents</Text>
+            <Text className="text-xs text-textLight mt-0.5">Train the AI on new government rules</Text>
           </View>
         </View>
       </TouchableOpacity>
@@ -99,144 +100,9 @@ export default function VaultScreen({ navigation }) {
         data={documents}
         keyExtractor={item => item.id}
         renderItem={renderDocument}
-        contentContainerStyle={styles.listContainer}
+        contentContainerStyle={{ paddingHorizontal: 20, paddingTop: 10, paddingBottom: 100 }}
         showsVerticalScrollIndicator={false}
       />
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: colors.background,
-  },
-  header: {
-    backgroundColor: colors.surface,
-    paddingTop: Platform.OS === 'ios' ? 50 : 30,
-    paddingBottom: 16,
-    paddingHorizontal: 24,
-    borderBottomWidth: 1,
-    borderBottomColor: '#E2E8F0',
-  },
-  headerTitle: {
-    fontSize: 22,
-    fontWeight: 'bold',
-    color: colors.primaryBlue,
-  },
-  headerSubtitle: {
-    fontSize: 14,
-    color: colors.textLight,
-    marginTop: 4,
-  },
-  
-  /* --- Admin Button Styles --- */
-  adminTriggerButton: {
-    backgroundColor: '#FFFFFF',
-    borderWidth: 1,
-    borderColor: '#E2E8F0',
-    borderStyle: 'dashed',
-    borderRadius: 12,
-    padding: 16,
-    marginHorizontal: 20,
-    marginTop: 20,
-    marginBottom: 8,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.02,
-    shadowRadius: 4,
-    elevation: 1,
-  },
-  buttonFlexRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  plusIcon: {
-    fontSize: 20,
-    marginRight: 12,
-  },
-  buttonTextContainer: {
-    flex: 1,
-  },
-  adminButtonText: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: colors.primaryBlue, 
-  },
-  adminButtonSubtext: {
-    fontSize: 12,
-    color: colors.textLight,
-    marginTop: 2,
-  },
-  /* --------------------------- */
-
-  listContainer: {
-    paddingHorizontal: 20,
-    paddingTop: 10,
-    paddingBottom: 100, // Cushion space for the floating bottom tab bar
-  },
-  docCard: {
-    backgroundColor: colors.surface,
-    borderRadius: 16,
-    padding: 16,
-    marginBottom: 12,
-    flexDirection: 'row',
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: '#E2E8F0',
-  },
-  iconWrapper: {
-    width: 50,
-    height: 50,
-    borderRadius: 12,
-    backgroundColor: '#F8FAFC',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: 16,
-  },
-  docInfo: {
-    flex: 1,
-    justifyContent: 'center',
-  },
-  docTitle: {
-    fontSize: 15,
-    fontWeight: '600',
-    color: colors.textDark,
-    marginBottom: 4,
-  },
-  docMeta: {
-    fontSize: 12,
-    color: colors.textLight,
-    marginBottom: 8,
-  },
-  statusRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  statusDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    marginRight: 6,
-  },
-  dotReady: {
-    backgroundColor: '#10B981', // Emerald green
-  },
-  dotPending: {
-    backgroundColor: '#F59E0B', // Amber
-  },
-  statusTextReady: {
-    fontSize: 12,
-    color: '#10B981',
-    fontWeight: '500',
-  },
-  statusTextPending: {
-    fontSize: 12,
-    color: '#F59E0B',
-    fontWeight: '500',
-  },
-  actionButton: {
-    padding: 8,
-    marginLeft: 8,
-  },
-});

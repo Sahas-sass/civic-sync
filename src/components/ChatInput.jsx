@@ -1,7 +1,6 @@
 import React from 'react';
-import { StyleSheet, TextInput, TouchableOpacity, View, Platform } from 'react-native';
+import { TextInput, TouchableOpacity, View, Platform } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { colors } from '../theme/colors';
 
 export default function ChatInput({ 
   value, 
@@ -15,64 +14,31 @@ export default function ChatInput({
   };
 
   return (
-    <View style={[
-      styles.inputContainer,
-      !keyboardVisible && { marginBottom: Platform.OS === 'ios' ? 95 : 85 }
-    ]}>
+    <View 
+      className="flex-row items-center px-4 py-2.5 bg-white border-t border-[#F0F0F0]"
+      style={!keyboardVisible ? { marginBottom: Platform.OS === 'ios' ? 95 : 85 } : {}}
+    >
       <TextInput
-        style={styles.textInput}
+        className="flex-1 bg-[#F5F5F5] rounded-[24px] px-[18px] py-[10px] text-[15px] text-textDark max-h-[100px]"
         placeholder="Ask a legal or civic question..."
-        placeholderTextColor={colors.textLight}
+        placeholderTextColor="#757575"
         value={value}
         onChangeText={onChangeText}
         multiline
       />
       <TouchableOpacity 
-        style={[styles.sendButton, !value.trim() && styles.sendButtonDisabled]} 
+        className={`w-10 h-10 rounded-full justify-center items-center ml-2.5 ${
+          value.trim() ? 'bg-primaryBlue' : 'bg-[#EAEAEA]'
+        }`}
         onPress={handleSend}
         disabled={!value.trim()}
       >
         <Ionicons 
           name="send" 
           size={18} 
-          color={value.trim() ? colors.surface : colors.textLight} 
+          color={value.trim() ? '#ffffff' : '#757575'} 
         />
       </TouchableOpacity>
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  inputContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-    backgroundColor: colors.surface,
-    borderTopWidth: 1,
-    borderTopColor: '#F0F0F0',
-  },
-  textInput: {
-    flex: 1,
-    backgroundColor: '#F5F5F5',
-    borderRadius: 24,
-    paddingHorizontal: 18,
-    paddingVertical: 10,
-    paddingTop: 10,
-    fontSize: 15,
-    color: colors.textDark,
-    maxHeight: 100,
-  },
-  sendButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: colors.primaryBlue,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginLeft: 10,
-  },
-  sendButtonDisabled: {
-    backgroundColor: '#EAEAEA',
-  },
-});

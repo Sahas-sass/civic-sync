@@ -3,7 +3,6 @@ import {
     ActivityIndicator,
     KeyboardAvoidingView,
     Platform,
-    StyleSheet,
     Text,
     TextInput,
     TouchableOpacity,
@@ -11,7 +10,6 @@ import {
     Alert
 } from 'react-native';
 import { supabase } from '../services/supabaseClient';
-import { colors } from '../theme/colors';
 
 export default function LoginScreen({ navigation }) {
   const [email, setEmail] = useState('');
@@ -31,7 +29,6 @@ export default function LoginScreen({ navigation }) {
     if (error) {
       Alert.alert("Error", "Invalid credentials");
     } else {
-      // Supabase listener in App.js will catch the session change and navigate automatically
       console.log('Logged in successfully!');
     }
   }
@@ -39,33 +36,33 @@ export default function LoginScreen({ navigation }) {
   return (
     <KeyboardAvoidingView 
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'} 
-      style={styles.container}
+      className="flex-1 bg-background"
     >
-      <View style={styles.innerContainer}>
+      <View className="flex-1 justify-center px-6">
         {/* Header Section */}
-        <View style={styles.headerContainer}>
-          <Text style={styles.title}>CivicSync</Text>
-          <Text style={styles.subtitle}>Your Autonomous Civic Navigator</Text>
+        <View className="mb-10 items-center">
+          <Text className="text-3xl font-bold text-primaryBlue">CivicSync</Text>
+          <Text className="text-base text-textLight mt-2 text-center">Your Autonomous Civic Navigator</Text>
         </View>
 
         {/* Input Form Fields */}
-        <View style={styles.formContainer}>
-          <Text style={styles.inputLabel}>Email Address</Text>
+        <View className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
+          <Text className="text-sm font-semibold text-textDark mb-2">Email Address</Text>
           <TextInput
-            style={styles.input}
+            className="border border-[#E2E8F0] rounded-lg p-3 text-base text-textDark mb-5 bg-background"
             placeholder="Enter your email"
-            placeholderTextColor={colors.textLight}
+            placeholderTextColor="#757575"
             value={email}
             onChangeText={setEmail}
             autoCapitalize="none"
             keyboardType="email-address"
           />
 
-          <Text style={styles.inputLabel}>Password</Text>
+          <Text className="text-sm font-semibold text-textDark mb-2">Password</Text>
           <TextInput
-            style={styles.input}
+            className="border border-[#E2E8F0] rounded-lg p-3 text-base text-textDark mb-5 bg-background"
             placeholder="Enter your password"
-            placeholderTextColor={colors.textLight}
+            placeholderTextColor="#757575"
             value={password}
             onChangeText={setPassword}
             secureTextEntry
@@ -74,23 +71,23 @@ export default function LoginScreen({ navigation }) {
 
           {/* Login Button */}
           <TouchableOpacity 
-            style={styles.button} 
+            className="bg-primaryBlue rounded-lg p-4 items-center mt-2.5"
             onPress={handleLogin}
             disabled={loading}
           >
             {loading ? (
-              <ActivityIndicator color={colors.surface} />
+              <ActivityIndicator color="#ffffff" />
             ) : (
-              <Text style={styles.buttonText}>Log In</Text>
+              <Text className="text-white text-base font-bold">Log In</Text>
             )}
           </TouchableOpacity>
 
           <TouchableOpacity 
-            style={{ marginTop: 20, alignItems: 'center' }} 
+            className="mt-5 items-center"
             onPress={() => navigation.navigate('Register')}
           >
-            <Text style={{ color: colors.textLight, fontSize: 14 }}>
-              Don't have an account? <Text style={{ color: colors.secondaryBlue, fontWeight: 'bold' }}>Sign up</Text>
+            <Text className="text-[#757575] text-sm">
+              Don't have an account? <Text className="text-[#0066cc] font-bold">Sign up</Text>
             </Text>
           </TouchableOpacity>
         </View>
@@ -98,67 +95,3 @@ export default function LoginScreen({ navigation }) {
     </KeyboardAvoidingView>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: colors.background,
-  },
-  innerContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    paddingHorizontal: 24,
-  },
-  headerContainer: {
-    marginBottom: 40,
-    alignItems: 'center',
-  },
-  title: {
-    fontSize: 32,
-    fontWeight: 'bold',
-    color: colors.primaryBlue,
-  },
-  subtitle: {
-    fontSize: 16,
-    color: colors.textLight,
-    marginTop: 8,
-  },
-  formContainer: {
-    backgroundColor: colors.surface,
-    padding: 24,
-    borderRadius: 16,
-    shadowColor: colors.primaryBlue,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.05,
-    shadowRadius: 12,
-    elevation: 3, // Shadow for android devices
-  },
-  inputLabel: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: colors.textDark,
-    marginBottom: 8,
-  },
-  input: {
-    borderWidth: 1,
-    borderColor: '#E2E8F0',
-    borderRadius: 8,
-    padding: 12,
-    fontSize: 16,
-    color: colors.textDark,
-    marginBottom: 20,
-    backgroundColor: colors.background,
-  },
-  button: {
-    backgroundColor: colors.primaryBlue,
-    borderRadius: 8,
-    padding: 16,
-    alignItems: 'center',
-    marginTop: 10,
-  },
-  buttonText: {
-    color: colors.surface,
-    fontSize: 16,
-    fontWeight: 'bold',
-  },
-});

@@ -1,6 +1,5 @@
 import React from 'react';
 import { 
-  StyleSheet, 
   Text, 
   View, 
   ScrollView, 
@@ -8,11 +7,9 @@ import {
   StatusBar
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { colors } from '../theme/colors';
 import WelcomeHeader from '../components/WelcomeHeader';
 
 export default function HomeScreen() {
-  // Hardcoded dashboard placeholder data for the prototype stage
   const activeRoadmaps = [
     { id: '1', title: 'Small Business Registration', progress: '2 of 4 steps completed', urgent: true },
     { id: '2', title: 'Rental Agreement Verification', progress: '1 of 3 steps completed', urgent: false },
@@ -24,51 +21,51 @@ export default function HomeScreen() {
   ];
 
   return (
-    <View style={styles.container}>
-      <StatusBar barStyle="light-content" backgroundColor={colors.primaryBlue} />
+    <View className="flex-1 bg-background">
+      <StatusBar barStyle="light-content" backgroundColor="#0066cc" />
       
-      {/* Top Authoritative Blue Header Block Component */}
+      {/* Top Header Block Component */}
       <WelcomeHeader activeRoadmapsCount={activeRoadmaps.length} securedDocsCount={5} />
 
       {/* Main Bottom Content Scroll Window */}
-      <ScrollView style={styles.contentScroll} contentContainerStyle={styles.scrollContentContainer}>
+      <ScrollView className="flex-1" contentContainerStyle={{ paddingHorizontal: 24, paddingTop: 24, paddingBottom: 100 }}>
         
         {/* Active Roadmaps Section */}
-        <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>Ongoing Navigation</Text>
-          <TouchableOpacity><Text style={styles.seeAllText}>See All</Text></TouchableOpacity>
+        <View className="flex-row justify-between items-center mb-4 mt-3">
+          <Text className="text-lg font-bold text-textDark">Ongoing Navigation</Text>
+          <TouchableOpacity><Text className="text-sm text-primaryBlue font-semibold">See All</Text></TouchableOpacity>
         </View>
 
         {activeRoadmaps.map((item) => (
-          <View key={item.id} style={styles.roadmapCard}>
-            <View style={styles.roadmapIconContainer}>
-              <Ionicons name="git-network-outline" size={24} color={colors.primaryBlue} />
+          <View key={item.id} className="bg-white rounded-2xl p-4 flex-row items-center mb-3 border border-[#E2E8F0] shadow-sm">
+            <View className="w-12 h-12 rounded-xl bg-[#EFF6FF] justify-center items-center mr-4">
+              <Ionicons name="git-network-outline" size={24} color="#0066cc" />
             </View>
-            <View style={styles.roadmapInfo}>
-              <Text style={styles.roadmapTitle}>{item.title}</Text>
-              <Text style={styles.roadmapProgress}>{item.progress}</Text>
+            <View className="flex-1">
+              <Text className="text-[15px] font-semibold text-textDark">{item.title}</Text>
+              <Text className="text-[13px] text-textLight mt-1">{item.progress}</Text>
             </View>
-            {item.urgent && <View style={styles.urgentDot} />}
+            {item.urgent && <View className="w-2.5 h-2.5 rounded-full bg-primaryBlue" />}
           </View>
         ))}
 
         {/* Recent Operations Section */}
-        <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>Recent Documents</Text>
-          <TouchableOpacity><Text style={styles.seeAllText}>See All</Text></TouchableOpacity>
+        <View className="flex-row justify-between items-center mb-4 mt-3">
+          <Text className="text-lg font-bold text-textDark">Recent Documents</Text>
+          <TouchableOpacity><Text className="text-sm text-primaryBlue font-semibold">See All</Text></TouchableOpacity>
         </View>
 
         {recentDocuments.map((doc) => (
-          <View key={doc.id} style={styles.docRow}>
-            <View style={styles.docIconContainer}>
-              <Ionicons name="document-text" size={24} color={colors.secondaryBlue} />
+          <View key={doc.id} className="bg-white rounded-2xl p-4 flex-row items-center mb-3 border border-[#E2E8F0] shadow-sm">
+            <View className="w-12 h-12 rounded-xl bg-[#F0FDF4] justify-center items-center mr-4">
+              <Ionicons name="document-text" size={24} color="#0066cc" />
             </View>
-            <View style={styles.docInfo}>
-              <Text style={styles.docName}>{doc.name}</Text>
-              <Text style={styles.docMeta}>{doc.type} • {doc.date}</Text>
+            <View className="flex-1">
+              <Text className="text-[15px] font-semibold text-textDark">{doc.name}</Text>
+              <Text className="text-[13px] text-textLight mt-1">{doc.type} • {doc.date}</Text>
             </View>
             <TouchableOpacity>
-              <Ionicons name="ellipsis-vertical" size={20} color={colors.textLight} />
+              <Ionicons name="ellipsis-vertical" size={20} color="#757575" />
             </TouchableOpacity>
           </View>
         ))}
@@ -77,105 +74,3 @@ export default function HomeScreen() {
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: colors.background,
-  },
-  contentScroll: {
-    flex: 1,
-  },
-  scrollContentContainer: {
-    paddingHorizontal: 24,
-    paddingTop: 24,
-    paddingBottom: 100, // Cushion space to prevent overlap with the floating tab bar
-  },
-  sectionHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 16,
-    marginTop: 12,
-  },
-  sectionTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: colors.textDark,
-  },
-  seeAllText: {
-    fontSize: 14,
-    color: colors.secondaryBlue,
-    fontWeight: '600',
-  },
-  roadmapCard: {
-    backgroundColor: colors.surface,
-    borderRadius: 16,
-    padding: 16,
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 12,
-    borderWidth: 1,
-    borderColor: '#E2E8F0',
-  },
-  roadmapIconContainer: {
-    width: 48,
-    height: 48,
-    borderRadius: 12,
-    backgroundColor: '#EFF6FF',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: 16,
-  },
-  roadmapInfo: {
-    flex: 1,
-  },
-  roadmapTitle: {
-    fontSize: 15,
-    fontWeight: '600',
-    color: colors.textDark,
-  },
-  roadmapProgress: {
-    fontSize: 13,
-    color: colors.textLight,
-    marginTop: 4,
-  },
-  urgentDot: {
-    width: 10,
-    height: 10,
-    borderRadius: 5,
-    backgroundColor: colors.secondaryBlue,
-  },
-  docRow: {
-    backgroundColor: colors.surface,
-    borderRadius: 16,
-    padding: 16,
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 12,
-    borderWidth: 1,
-    borderColor: '#E2E8F0',
-  },
-  docIconContainer: {
-    width: 48,
-    height: 48,
-    borderRadius: 12,
-    backgroundColor: '#F0FDF4',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: 16,
-  },
-  docInfo: {
-    flex: 1,
-  },
-  docName: {
-    fontSize: 15,
-    fontWeight: '600',
-    color: colors.textDark,
-  },
-  docMeta: {
-    fontSize: 13,
-    color: colors.textLight,
-    marginTop: 4,
-  },
-});
