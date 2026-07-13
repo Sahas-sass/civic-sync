@@ -11,6 +11,13 @@ from langchain_google_genai import GoogleGenerativeAIEmbeddings
 
 load_dotenv()
 
+# Fallback: if keys are not loaded, try loading from parent directory .env
+if not os.environ.get("SUPABASE_URL"):
+    import os
+    parent_env_path = os.path.join("..", ".env")
+    if os.path.exists(parent_env_path):
+        load_dotenv(dotenv_path=parent_env_path)
+
 SUPABASE_URL = os.environ.get("SUPABASE_URL")
 SUPABASE_KEY = os.environ.get("SUPABASE_SERVICE_ROLE_KEY") 
 supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
