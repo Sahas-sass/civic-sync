@@ -9,3 +9,6 @@ pypdf
 python-dotenv
 google-generativeai
 google-genai
+pypdf[image]
+pillow
+python-dotenv
