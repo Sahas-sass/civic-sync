@@ -1,6 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { 
-  StyleSheet, 
   Text, 
   View, 
   KeyboardAvoidingView, 
@@ -10,7 +9,6 @@ import {
   Alert,
   Keyboard
 } from 'react-native';
-import { colors } from '../theme/colors';
 import { supabase } from '../services/supabaseClient';
 import { BACKEND_URL } from '../services/apiConfig';
 import MessageItem from '../components/MessageItem';
@@ -169,35 +167,42 @@ export default function AgentScreen() {
 
   if (loadingHistory) {
     return (
-      <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color={colors.primaryBlue} />
-        <Text style={styles.loadingText}>Loading conversation history...</Text>
+      <View className="flex-1 justify-center items-center bg-background">
+        <ActivityIndicator size="large" color="#0066cc" />
+        <Text className="text-sm text-textLight mt-3">Loading conversation history...</Text>
       </View>
     );
   }
 
   return (
     <KeyboardAvoidingView 
-      style={styles.container} 
+      className="flex-1 bg-background" 
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}
     >
-      <View style={styles.header}>
-        <Text style={styles.headerTitle}>CivicSync AI</Text>
-        <Text style={styles.headerSubtitle}>Legal Navigator Assistant</Text>
+      {/* Header */}
+      <View 
+        className="bg-white pb-4 items-center border-b border-[#E2E8F0] shadow-sm"
+        style={{ paddingTop: Platform.OS === 'ios' ? 50 : 30 }}
+      >
+        <Text className="text-lg font-bold text-primaryBlue">CivicSync AI</Text>
+        <Text className="text-xs text-textLight mt-0.5">Legal Navigator Assistant</Text>
       </View>
 
+      {/* Chat History */}
       <FlatList
         ref={flatListRef}
         data={messages}
         keyExtractor={(item) => item.id}
         renderItem={renderItem}
-        contentContainerStyle={styles.chatContainer}
+        contentContainerStyle={{ padding: 16, paddingBottom: 20 }}
         onContentSizeChange={() => flatListRef.current?.scrollToEnd({ animated: true })}
       />
 
+      {/* Multi-Step Agent Status Indicator */}
       <AgentStatus status={agentStatus} />
 
+      {/* Input Area */}
       <ChatInput 
         value={inputText}
         onChangeText={setInputText}
@@ -207,48 +212,3 @@ export default function AgentScreen() {
     </KeyboardAvoidingView>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: colors.background,
-  },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: colors.background,
-  },
-  loadingText: {
-    fontSize: 14,
-    color: colors.textLight,
-    marginTop: 12,
-  },
-  header: {
-    backgroundColor: colors.surface,
-    paddingTop: Platform.OS === 'ios' ? 50 : 30,
-    paddingBottom: 16,
-    alignItems: 'center',
-    borderBottomWidth: 1,
-    borderBottomColor: '#E2E8F0',
-    elevation: 2,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 4,
-  },
-  headerTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: colors.primaryBlue,
-  },
-  headerSubtitle: {
-    fontSize: 12,
-    color: colors.textLight,
-    marginTop: 2,
-  },
-  chatContainer: {
-    padding: 16,
-    paddingBottom: 20,
-  },
-});

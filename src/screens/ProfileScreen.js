@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { 
-  StyleSheet, 
   Text, 
   View, 
   TextInput, 
@@ -11,7 +10,6 @@ import {
   ActivityIndicator
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { colors } from '../theme/colors';
 import { supabase } from '../services/supabaseClient';
 import AvatarPicker from '../components/AvatarPicker';
 import PasswordChangeForm from '../components/PasswordChangeForm';
@@ -73,9 +71,8 @@ export default function ProfileScreen() {
     }
   };
 
-  // Automatically formats phone numbers to Sri Lankan style: +94 XX XXX XXXX
   const formatPhone = (text) => {
-    let cleaned = text.replace(/[^\d]/g, ''); // digits only
+    let cleaned = text.replace(/[^\d]/g, '');
     if (cleaned.startsWith('0')) {
       cleaned = '94' + cleaned.substring(1);
     }
@@ -84,9 +81,8 @@ export default function ProfileScreen() {
     } else {
       cleaned = '+94' + cleaned;
     }
-    cleaned = cleaned.substring(0, 12); // Max length "+94771234567" is 12 chars
+    cleaned = cleaned.substring(0, 12);
     
-    // Add spaces for layout: +94 XX XXX XXXX
     if (cleaned.length > 9) {
       return `${cleaned.slice(0, 3)} ${cleaned.slice(3, 5)} ${cleaned.slice(5, 8)} ${cleaned.slice(8)}`;
     } else if (cleaned.length > 5) {
@@ -146,20 +142,23 @@ export default function ProfileScreen() {
   };
 
   return (
-    <View style={styles.container}>
-      <View style={styles.header}>
-        <Text style={styles.headerTitle}>Secure Profile</Text>
+    <View className="flex-1 bg-background">
+      <View 
+        className="bg-white pb-4 px-6 border-b border-[#E2E8F0] flex-row justify-between items-center"
+        style={{ paddingTop: Platform.OS === 'ios' ? 50 : 30 }}
+      >
+        <Text className="text-xl font-bold text-primaryBlue">Secure Profile</Text>
         <TouchableOpacity onPress={() => setIsEditing(!isEditing)}>
-          <Text style={styles.editButtonText}>{isEditing ? 'Cancel' : 'Edit'}</Text>
+          <Text className="text-base text-primaryBlue font-semibold">{isEditing ? 'Cancel' : 'Edit'}</Text>
         </TouchableOpacity>
       </View>
 
       {loading && !email ? (
-        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-          <ActivityIndicator size="large" color={colors.primaryBlue} />
+        <View className="flex-1 justify-center items-center">
+          <ActivityIndicator size="large" color="#0066cc" />
         </View>
       ) : (
-        <ScrollView contentContainerStyle={styles.scrollContainer} showsVerticalScrollIndicator={false}>
+        <ScrollView contentContainerStyle={{ padding: 24, paddingBottom: 100 }} showsVerticalScrollIndicator={false}>
           {/* Avatar Section Component */}
           <AvatarPicker 
             avatarUrl={avatarUrl} 
@@ -169,46 +168,52 @@ export default function ProfileScreen() {
           />
 
           {/* Data Form Section */}
-          <View style={styles.formSection}>
-            <Text style={styles.sectionTitle}>Civic Auto-Fill Data</Text>
-            <Text style={styles.sectionSubtitle}>
+          <View className="bg-white p-5 rounded-2xl border border-[#E2E8F0] mb-6 shadow-sm">
+            <Text className="text-base font-bold text-textDark mb-1">Civic Auto-Fill Data</Text>
+            <Text className="text-[13px] text-textLight mb-5 leading-[18px]">
               The AI agent uses this encrypted data to complete your official forms.
             </Text>
 
-            <View style={styles.inputGroup}>
-              <Text style={styles.inputLabel}>Full Legal Name</Text>
+            <View className="mb-4">
+              <Text className="text-[13px] font-semibold text-textDark mb-2">Full Legal Name</Text>
               <TextInput
-                style={[styles.input, !isEditing && styles.inputDisabled]}
+                className={`border border-[#E2E8F0] rounded-lg p-3 text-[15px] ${
+                  isEditing ? 'text-textDark bg-white' : 'text-textLight bg-[#F8FAFC]'
+                }`}
                 value={name}
                 onChangeText={setName}
                 editable={isEditing}
               />
             </View>
 
-            <View style={styles.inputGroup}>
-              <Text style={styles.inputLabel}>National Identity Card (NIC)</Text>
+            <View className="mb-4">
+              <Text className="text-[13px] font-semibold text-textDark mb-2">National Identity Card (NIC)</Text>
               <TextInput
-                style={[styles.input, !isEditing && styles.inputDisabled]}
+                className={`border border-[#E2E8F0] rounded-lg p-3 text-[15px] ${
+                  isEditing ? 'text-textDark bg-white' : 'text-textLight bg-[#F8FAFC]'
+                }`}
                 value={nic}
                 onChangeText={(text) => setNic(text.toUpperCase())}
                 editable={isEditing}
               />
             </View>
 
-            <View style={styles.inputGroup}>
-              <Text style={styles.inputLabel}>Email Address</Text>
+            <View className="mb-4">
+              <Text className="text-[13px] font-semibold text-textDark mb-2">Email Address</Text>
               <TextInput
-                style={[styles.input, !isEditing && styles.inputDisabled]}
+                className="border border-[#E2E8F0] rounded-lg p-3 text-[15px] text-textLight bg-[#F8FAFC]"
                 value={email}
                 editable={false}
                 keyboardType="email-address"
               />
             </View>
 
-            <View style={styles.inputGroup}>
-              <Text style={styles.inputLabel}>Phone Number</Text>
+            <View className="mb-4">
+              <Text className="text-[13px] font-semibold text-textDark mb-2">Phone Number</Text>
               <TextInput
-                style={[styles.input, !isEditing && styles.inputDisabled]}
+                className={`border border-[#E2E8F0] rounded-lg p-3 text-[15px] ${
+                  isEditing ? 'text-textDark bg-white' : 'text-textLight bg-[#F8FAFC]'
+                }`}
                 value={phone}
                 onChangeText={(text) => setPhone(formatPhone(text))}
                 editable={isEditing}
@@ -217,11 +222,11 @@ export default function ProfileScreen() {
             </View>
 
             {isEditing && (
-              <TouchableOpacity style={styles.saveButton} onPress={handleSave} disabled={loading}>
+              <TouchableOpacity className="bg-primaryBlue rounded-lg p-3.5 items-center mt-2" onPress={handleSave} disabled={loading}>
                 {loading ? (
-                  <ActivityIndicator color={colors.surface} />
+                  <ActivityIndicator color="#ffffff" />
                 ) : (
-                  <Text style={styles.saveButtonText}>Save Changes</Text>
+                  <Text className="text-white text-[15px] font-bold">Save Changes</Text>
                 )}
               </TouchableOpacity>
             )}
@@ -231,9 +236,9 @@ export default function ProfileScreen() {
           </View>
 
           {/* Logout Section */}
-          <TouchableOpacity style={styles.logoutButton} onPress={handleSignOut}>
+          <TouchableOpacity className="flex-row items-center justify-center bg-[#FEF2F2] border border-[#FECACA] rounded-xl p-4 mb-5" onPress={handleSignOut}>
             <Ionicons name="log-out-outline" size={20} color="#EF4444" />
-            <Text style={styles.logoutButtonText}>Sign Out</Text>
+            <Text className="ml-2 text-base font-semibold text-red-500">Sign Out</Text>
           </TouchableOpacity>
 
           {/* Delete Account Button Component */}
@@ -244,106 +249,3 @@ export default function ProfileScreen() {
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: colors.background,
-  },
-  header: {
-    backgroundColor: colors.surface,
-    paddingTop: Platform.OS === 'ios' ? 50 : 30,
-    paddingBottom: 16,
-    paddingHorizontal: 24,
-    borderBottomWidth: 1,
-    borderBottomColor: '#E2E8F0',
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  headerTitle: {
-    fontSize: 22,
-    fontWeight: 'bold',
-    color: colors.primaryBlue,
-  },
-  editButtonText: {
-    fontSize: 16,
-    color: colors.secondaryBlue,
-    fontWeight: '600',
-  },
-  scrollContainer: {
-    padding: 24,
-    paddingBottom: 100, // Bottom navigation padding
-  },
-  formSection: {
-    backgroundColor: colors.surface,
-    padding: 20,
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: '#E2E8F0',
-    marginBottom: 24,
-  },
-  sectionTitle: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: colors.textDark,
-    marginBottom: 4,
-  },
-  sectionSubtitle: {
-    fontSize: 13,
-    color: colors.textLight,
-    marginBottom: 20,
-    lineHeight: 18,
-  },
-  inputGroup: {
-    marginBottom: 16,
-  },
-  inputLabel: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: colors.textDark,
-    marginBottom: 8,
-  },
-  input: {
-    borderWidth: 1,
-    borderColor: '#E2E8F0',
-    borderRadius: 8,
-    padding: 12,
-    fontSize: 15,
-    color: colors.textDark,
-    backgroundColor: colors.surface,
-  },
-  inputDisabled: {
-    backgroundColor: '#F8FAFC',
-    color: colors.textLight,
-  },
-  saveButton: {
-    backgroundColor: colors.primaryBlue,
-    borderRadius: 8,
-    padding: 14,
-    alignItems: 'center',
-    marginTop: 8,
-  },
-  saveButtonText: {
-    color: colors.surface,
-    fontSize: 15,
-    fontWeight: 'bold',
-  },
-  logoutButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#FEF2F2',
-    borderWidth: 1,
-    borderColor: '#FECACA',
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 20,
-  },
-  logoutButtonText: {
-    marginLeft: 8,
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#EF4444',
-  },
-});

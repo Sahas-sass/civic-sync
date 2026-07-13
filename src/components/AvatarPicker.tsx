@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import { 
-  StyleSheet, 
   Text, 
   View, 
   TouchableOpacity, 
@@ -10,7 +9,6 @@ import {
   Platform
 } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
-import { colors } from '../theme/colors';
 import { supabase } from '../services/supabaseClient';
 
 interface AvatarPickerProps {
@@ -97,75 +95,26 @@ export default function AvatarPicker({
     }
   };
 
-  console.log('Avatar image URL loaded:', avatarUrl);
-
   return (
-    <View style={styles.avatarSection}>
+    <View className="items-center mb-8">
       <TouchableOpacity onPress={pickImage} disabled={!isEditing || uploading}>
-        <View style={styles.avatarCircle}>
+        <View className="w-20 h-20 rounded-full bg-[#EFF6FF] justify-center items-center mb-3 border-2 border-primaryBlue overflow-hidden">
           {uploading ? (
-            <ActivityIndicator size="small" color={colors.primaryBlue} />
+            <ActivityIndicator size="small" color="#0066cc" />
           ) : avatarUrl ? (
-            <Image key={avatarUrl} source={{ uri: avatarUrl }} style={styles.avatarImage} />
+            <Image key={avatarUrl} source={{ uri: avatarUrl }} className="w-20 h-20 rounded-full" />
           ) : (
-            <Text style={styles.avatarText}>{name ? name.charAt(0) : 'U'}</Text>
+            <Text className="text-3xl font-bold text-primaryBlue">{name ? name.charAt(0) : 'U'}</Text>
           )}
         </View>
       </TouchableOpacity>
       {isEditing && (
         <TouchableOpacity onPress={pickImage} disabled={uploading}>
-          <Text style={styles.changePhotoText}>Change Photo</Text>
+          <Text className="text-primaryBlue text-[13px] font-semibold mt-1">Change Photo</Text>
         </TouchableOpacity>
       )}
-      <Text style={styles.userName}>{name || 'User'}</Text>
-      <Text style={styles.userStatus}>Verified Citizen Account</Text>
+      <Text className="text-xl font-bold text-textDark mt-2">{name || 'User'}</Text>
+      <Text className="text-sm text-[#10B981] mt-1 font-medium">Verified Citizen Account</Text>
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  avatarSection: {
-    alignItems: 'center',
-    marginBottom: 32,
-  },
-  avatarCircle: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    backgroundColor: '#EFF6FF',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 12,
-    borderWidth: 2,
-    borderColor: colors.primaryBlue,
-    overflow: 'hidden',
-  },
-  avatarImage: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-  },
-  avatarText: {
-    fontSize: 32,
-    fontWeight: 'bold',
-    color: colors.primaryBlue,
-  },
-  changePhotoText: {
-    color: colors.secondaryBlue,
-    fontSize: 13,
-    fontWeight: '600',
-    marginTop: 4,
-  },
-  userName: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: colors.textDark,
-    marginTop: 8,
-  },
-  userStatus: {
-    fontSize: 14,
-    color: '#10B981',
-    marginTop: 4,
-    fontWeight: '500',
-  },
-});

@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import { 
-  StyleSheet, 
   Text, 
   TouchableOpacity, 
   ActivityIndicator, 
@@ -44,7 +43,7 @@ export default function DeleteAccountButton() {
 
   return (
     <TouchableOpacity 
-      style={styles.deleteButton} 
+      className="flex-row items-center justify-center bg-[#FFF5F5] border border-[#FEE2E2] rounded-xl p-4 mb-10"
       onPress={handleDeleteAccount}
       disabled={deleting}
     >
@@ -53,29 +52,9 @@ export default function DeleteAccountButton() {
       ) : (
         <>
           <Ionicons name="trash-outline" size={20} color="#EF4444" />
-          <Text style={styles.deleteButtonText}>Delete My Account</Text>
+          <Text className="ml-2 text-base font-semibold text-red-500">Delete My Account</Text>
         </>
       )}
     </TouchableOpacity>
   );
 }
-
-const styles = StyleSheet.create({
-  deleteButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#FFF5F5',
-    borderWidth: 1,
-    borderColor: '#FEE2E2',
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 40,
-  },
-  deleteButtonText: {
-    marginLeft: 8,
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#EF4444',
-  },
-});

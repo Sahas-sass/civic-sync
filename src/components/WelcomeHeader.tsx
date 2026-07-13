@@ -1,13 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { 
-  StyleSheet, 
   Text, 
   View, 
   TouchableOpacity, 
   Platform 
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { colors } from '../theme/colors';
 import { supabase } from '../services/supabaseClient';
 
 interface WelcomeHeaderProps {
@@ -49,97 +47,32 @@ export default function WelcomeHeader({
   }, []);
 
   return (
-    <View style={styles.headerBlock}>
-      <View style={styles.headerRow}>
+    <View 
+      className="bg-primaryBlue rounded-b-[32px] px-6 pb-6"
+      style={{ paddingTop: Platform.OS === 'ios' ? 60 : 40 }}
+    >
+      <View className="flex-row justify-between items-center mb-6">
         <View>
-          <Text style={styles.welcomeText}>Welcome Back,</Text>
-          <Text style={styles.userNameText}>{userName}</Text>
+          <Text className="text-xs text-white/70">Welcome Back,</Text>
+          <Text className="text-[22px] font-bold text-white mt-0.5">{userName}</Text>
         </View>
-        <TouchableOpacity style={styles.notificationButton}>
-          <Ionicons name="notifications-outline" size={24} color={colors.surface} />
-          <View style={styles.notificationBadge} />
+        <TouchableOpacity className="w-11 h-11 rounded-full bg-white/15 justify-center items-center relative">
+          <Ionicons name="notifications-outline" size={24} color="#ffffff" />
+          <View className="absolute top-[12px] right-[13px] w-2 h-2 rounded-full bg-red-500" />
         </TouchableOpacity>
       </View>
 
       {/* Quick Summary Grid Cards */}
-      <View style={styles.summaryGrid}>
-        <View style={styles.summaryCard}>
-          <Text style={styles.summaryNumber}>{activeRoadmapsCount}</Text>
-          <Text style={styles.summaryLabel}>Active Roadmaps</Text>
+      <View className="flex-row justify-between gap-4">
+        <View className="flex-1 bg-white/10 rounded-2xl p-4 border border-white/15">
+          <Text className="text-2xl font-bold text-white">{activeRoadmapsCount}</Text>
+          <Text className="text-xs text-white/80 mt-1">Active Roadmaps</Text>
         </View>
-        <View style={styles.summaryCard}>
-          <Text style={styles.summaryNumber}>{securedDocsCount}</Text>
-          <Text style={styles.summaryLabel}>Secured Docs</Text>
+        <View className="flex-1 bg-white/10 rounded-2xl p-4 border border-white/15">
+          <Text className="text-2xl font-bold text-white">{securedDocsCount}</Text>
+          <Text className="text-xs text-white/80 mt-1">Secured Docs</Text>
         </View>
       </View>
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  headerBlock: {
-    backgroundColor: colors.primaryBlue,
-    borderBottomLeftRadius: 32,
-    borderBottomRightRadius: 32,
-    paddingTop: Platform.OS === 'ios' ? 60 : 40,
-    paddingHorizontal: 24,
-    paddingBottom: 24,
-  },
-  headerRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 24,
-  },
-  welcomeText: {
-    fontSize: 14,
-    color: 'rgba(255, 255, 255, 0.7)',
-  },
-  userNameText: {
-    fontSize: 22,
-    fontWeight: 'bold',
-    color: colors.surface,
-    marginTop: 2,
-  },
-  notificationButton: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: 'rgba(255, 255, 255, 0.15)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    position: 'relative',
-  },
-  notificationBadge: {
-    position: 'absolute',
-    top: 12,
-    right: 13,
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: '#EF4444',
-  },
-  summaryGrid: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    gap: 16,
-  },
-  summaryCard: {
-    flex: 1,
-    backgroundColor: 'rgba(255, 255, 255, 0.1)',
-    borderRadius: 16,
-    padding: 16,
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.15)',
-  },
-  summaryNumber: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: colors.surface,
-  },
-  summaryLabel: {
-    fontSize: 12,
-    color: 'rgba(255, 255, 255, 0.8)',
-    marginTop: 4,
-  },
-});
