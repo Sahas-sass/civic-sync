@@ -262,5 +262,17 @@ async def generate_pdf(payload: GeneratePDFRequest):
             file_options={"content-type": "application/pdf", "x-upsert": "true"}
         )
 
+        # 6. Insert record tracking information into Documents table
+        doc_entry = {
+            "user_id": payload.user_id,
+            "file_name": f"{payload.form_type.replace('_', ' ').title()} Form.pdf",
+            "file_path": destination_path,
+            "document_type": "Official Form",
+            "is_ready": True
+        }
+        supabase.table("Documents").insert(doc_entry).execute()
+
+        return {"status": "success", "message": "Document generated successfully!", "file_path": destination_path}
+
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
