@@ -4,11 +4,21 @@ import {
   Platform,
   Text,
   TouchableOpacity,
-  View
+  View,
+  ActivityIndicator, 
+  Alert,
+  ScrollView
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
-const initialDocuments = [
+// Native device feature imports
+import * as FileSystem from 'expo-file-system';
+import * as Sharing from 'expo-sharing';
+import * as DocumentPicker from 'expo-document-picker';
+
+import { supabase } from '../services/supabaseClient';
+
+const dummyPreviewDocuments = [
   {
     id: '1',
     title: 'BR_Form_1_AutoFilled.pdf',
@@ -33,11 +43,56 @@ const initialDocuments = [
     size: '4.8 MB',
     isReady: true,
   },
+  {
+    id: '4',
+    title: 'Blank_Vehicle_Registration_Form.pdf',
+    type: 'Custom Template',
+    date: 'Oct 15, 2026',
+    size: '4.8 MB',
+    isReady: true,
+  },
 ];
 
 export default function VaultScreen({ navigation }) {
-  const [documents, setDocuments] = useState(initialDocuments);
+  const [documents, setDocuments] = useState();
 
+  useEffect(() => {
+    fetchDocuments();
+  }, []);
+
+  // Fetches user documents (including Custom Templates) from Supabase
+  const fetchDocuments = async () => {
+    try {
+      setLoading(true);
+      // Get the current authenticated user
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        setDocuments(dummyPreviewDocuments);
+        return;
+      }
+
+      // Fetch documents from Supabase for the authenticated user
+      const { data, error } = await supabase
+        .from('Documents')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      // Update with real docs and if no docs are found, use dummy preview documents
+      if (data && data.length > 0) {
+        setDocuments(data);
+      } else {
+        setDocuments(dummyPreviewDocuments);
+      }
+    } catch (err) {
+      console.error("Error fetching documents:", err);
+      setDocuments(dummyPreviewDocuments);
+    } finally {
+      setLoading(false);
+    }
+  };
+  
   const renderDocument = ({ item }) => (
     <View className="bg-white rounded-2xl p-4 mb-3 flex-row items-center border border-[#E2E8F0]">
       <View className="w-[50px] h-[50px] rounded-xl bg-[#F8FAFC] justify-center items-center mr-4">
