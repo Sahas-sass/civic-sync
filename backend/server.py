@@ -217,6 +217,17 @@ async def generate_pdf(payload: GeneratePDFRequest):
         
         if not full_name or not nic_number:
             raise HTTPException(status_code=400, detail="Missing Name or NIC in secure profile.")   
-    
+
+        # 2. Download the blank template from template bucket
+        template_filename = f"{payload.form_type}_blank.pdf"
+        try:
+            blank_pdf_bytes = supabase.storage.from_("templates").download(template_filename)
+        except Exception:
+            raise HTTPException(status_code=404, detail="Blank form template not found in vault templates.")
+
+        # 3. Create an overlay PDF layer with coordinates using ReportLab
+        packet = io.BytesIO()
+        can = canvas.Canvas(packet)
+
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
