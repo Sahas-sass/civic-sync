@@ -22,7 +22,7 @@ export default function HomeScreen() {
 
   return (
     <View className="flex-1 bg-background">
-      <StatusBar barStyle="light-content" backgroundColor="#0066cc" />
+      <StatusBar barStyle="light-content" backgroundColor="#1E3A8A" />
       
       {/* Top Header Block Component */}
       <WelcomeHeader activeRoadmapsCount={activeRoadmaps.length} securedDocsCount={5} />
@@ -39,7 +39,7 @@ export default function HomeScreen() {
         {activeRoadmaps.map((item) => (
           <View key={item.id} className="bg-white rounded-2xl p-4 flex-row items-center mb-3 border border-[#E2E8F0] shadow-sm">
             <View className="w-12 h-12 rounded-xl bg-[#EFF6FF] justify-center items-center mr-4">
-              <Ionicons name="git-network-outline" size={24} color="#0066cc" />
+              <Ionicons name="git-network-outline" size={24} color="#1E3A8A" />
             </View>
             <View className="flex-1">
               <Text className="text-[15px] font-semibold text-textDark">{item.title}</Text>
@@ -58,7 +58,7 @@ export default function HomeScreen() {
         {recentDocuments.map((doc) => (
           <View key={doc.id} className="bg-white rounded-2xl p-4 flex-row items-center mb-3 border border-[#E2E8F0] shadow-sm">
             <View className="w-12 h-12 rounded-xl bg-[#F0FDF4] justify-center items-center mr-4">
-              <Ionicons name="document-text" size={24} color="#0066cc" />
+              <Ionicons name="document-text" size={24} color="#1E3A8A" />
             </View>
             <View className="flex-1">
               <Text className="text-[15px] font-semibold text-textDark">{doc.name}</Text>

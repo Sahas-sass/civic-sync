@@ -161,7 +161,7 @@ export default function VaultScreen({ navigation }) {
         <Ionicons 
           name={item.title.includes('.pdf') ? "document-text" : "image"} 
           size={28} 
-          color="#0066cc" 
+          color="#1E3A8A" 
         />
       </View>
       

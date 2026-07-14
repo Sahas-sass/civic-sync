@@ -1,14 +1,16 @@
+import React, { useState } from 'react';
 import * as DocumentPicker from 'expo-document-picker';
-import { useState } from 'react';
 import {
     ActivityIndicator,
     Alert,
     Platform,
-    SafeAreaView,
     Text,
     TouchableOpacity,
-    View
+    View,
+    StatusBar
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { BACKEND_URL } from '../services/apiConfig';
 
 export default function AdminScreen() {
   const [isUploading, setIsUploading] = useState(false);
@@ -47,9 +49,7 @@ export default function AdminScreen() {
         });
       }
 
-      const BACKEND_URL = 'https://civic-sync-0zyi.onrender.com/api/ingest'; 
-
-      const response = await fetch(BACKEND_URL, {
+      const response = await fetch(`${BACKEND_URL}/api/ingest`, {
         method: 'POST',
         body: formData,
       });
@@ -73,39 +73,42 @@ export default function AdminScreen() {
   };
 
   return (
-    <SafeAreaView className="flex-1 bg-background">
-      <View className="flex-1 p-6 justify-center">
-        
-        <View className="mb-10">
-          <Text className="text-2xl font-bold text-textDark mb-3">Data Control Center</Text>
-          <Text className="text-base text-textLight leading-6">
-            Upload official government PDFs to instantly expand the CivicSync AI knowledge base.
-          </Text>
-        </View>
-
-        <View className="bg-white p-6 rounded-2xl shadow-sm items-center border border-gray-100">
-          {selectedFileName && (
-            <Text className="mb-4 text-sm text-primaryBlue font-semibold">Preparing: {selectedFileName}</Text>
-          )}
-
-          <TouchableOpacity 
-            className={`w-full py-4 rounded-xl items-center ${isUploading ? 'bg-blue-300' : 'bg-primaryBlue'}`}
-            onPress={handlePickAndUpload}
-            disabled={isUploading}
-            activeOpacity={0.8}
-          >
-            {isUploading ? (
-              <View className="flex-row items-center">
-                <ActivityIndicator color="#FFF" size="small" />
-                <Text className="text-white text-base font-bold"> Processing AI Vectors...</Text>
-              </View>
-            ) : (
-              <Text className="text-white text-base font-bold">Select & Upload Legal PDF</Text>
+    <View className="flex-1 bg-background">
+      <StatusBar barStyle="dark-content" backgroundColor="#F8FAFC" />
+      <SafeAreaView className="flex-1">
+        <View className="flex-1 p-6 justify-center">
+          
+          <View className="mb-10">
+            <Text className="text-2xl font-bold text-textDark mb-3">Data Control Center</Text>
+            <Text className="text-base text-textLight leading-6">
+              Upload official government PDFs to instantly expand the CivicSync AI knowledge base.
+            </Text>
+          </View>
+  
+          <View className="bg-white p-6 rounded-2xl shadow-sm items-center border border-gray-100">
+            {selectedFileName && (
+              <Text className="mb-4 text-sm text-primaryBlue font-semibold">Preparing: {selectedFileName}</Text>
             )}
-          </TouchableOpacity>
+  
+            <TouchableOpacity 
+              className={`w-full py-4 rounded-xl items-center ${isUploading ? 'bg-blue-300' : 'bg-primaryBlue'}`}
+              onPress={handlePickAndUpload}
+              disabled={isUploading}
+              activeOpacity={0.8}
+            >
+              {isUploading ? (
+                <View className="flex-row items-center">
+                  <ActivityIndicator color="#FFF" size="small" />
+                  <Text className="text-white text-base font-bold"> Processing AI Vectors...</Text>
+                </View>
+              ) : (
+                <Text className="text-white text-base font-bold">Select & Upload Legal PDF</Text>
+              )}
+            </TouchableOpacity>
+          </View>
+  
         </View>
-
-      </View>
-    </SafeAreaView>
+      </SafeAreaView>
+    </View>
   );
 }

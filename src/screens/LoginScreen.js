@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import React, { useState } from 'react';
 import {
     ActivityIndicator,
     KeyboardAvoidingView,
@@ -7,7 +7,8 @@ import {
     TextInput,
     TouchableOpacity,
     View,
-    Alert
+    Alert,
+    StatusBar
 } from 'react-native';
 import { supabase } from '../services/supabaseClient';
 
@@ -38,6 +39,7 @@ export default function LoginScreen({ navigation }) {
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'} 
       className="flex-1 bg-background"
     >
+      <StatusBar barStyle="dark-content" backgroundColor="#F8FAFC" />
       <View className="flex-1 justify-center px-6">
         {/* Header Section */}
         <View className="mb-10 items-center">
@@ -87,7 +89,7 @@ export default function LoginScreen({ navigation }) {
             onPress={() => navigation.navigate('Register')}
           >
             <Text className="text-[#757575] text-sm">
-              Don't have an account? <Text className="text-[#0066cc] font-bold">Sign up</Text>
+              Don't have an account? <Text className="text-primaryBlue font-bold">Sign up</Text>
             </Text>
           </TouchableOpacity>
         </View>
