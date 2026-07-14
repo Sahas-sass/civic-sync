@@ -2,6 +2,7 @@ import os
 import json
 import shutil
 import traceback
+import io
 from fastapi import FastAPI, UploadFile, File, Form, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
@@ -207,7 +208,7 @@ class GeneratePDFRequest(BaseModel):
 async def generate_pdf(payload: GeneratePDFRequest):
     try:
         # 1. Fetch user profile data 
-        profile_res = supabase.table("Profiles").select("full_name", "nic_number").eq("id", payload.user_id).execute()
+        profile_res = supabase_client.table("Profiles").select("full_name", "nic_number").eq("id", payload.user_id).execute()
         if not profile_res.data:
             raise HTTPException(status_code=404, detail="User profile not found. Please complete profile details first.")
         
@@ -221,7 +222,7 @@ async def generate_pdf(payload: GeneratePDFRequest):
         # 2. Download the blank template from template bucket
         template_filename = f"{payload.form_type}_blank.pdf"
         try:
-            blank_pdf_bytes = supabase.storage.from_("templates").download(template_filename)
+            blank_pdf_bytes = supabase_client.storage.from_("templates").download(template_filename)
         except Exception:
             raise HTTPException(status_code=404, detail="Blank form template not found in vault templates.")
 
@@ -256,9 +257,9 @@ async def generate_pdf(payload: GeneratePDFRequest):
 
         # 5. Upload generated form to private user vault folder structure
         destination_path = f"{payload.user_id}/{payload.form_type}_completed.pdf"
-        supabase.storage.from_("user_vault").upload(
+        supabase_client.storage.from_("user_vault").upload(
             path=destination_path,
-            file=final_pdf_buffer.read(),
+            file=final_pdf_buffer.getvalue(),
             file_options={"content-type": "application/pdf", "x-upsert": "true"}
         )
 
@@ -270,7 +271,7 @@ async def generate_pdf(payload: GeneratePDFRequest):
             "document_type": "Official Form",
             "is_ready": True
         }
-        supabase.table("Documents").insert(doc_entry).execute()
+        supabase_client.table("Documents").insert(doc_entry).execute()
 
         return {"status": "success", "message": "Document generated successfully!", "file_path": destination_path}
 
