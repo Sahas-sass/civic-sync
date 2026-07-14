@@ -103,6 +103,34 @@ export default function RoadmapsScreen() {
     }
   };
 
+  const deleteRoadmap = async (roadmapId) => {
+    try {
+      // Optimistically update UI list
+      setRoadmaps(prev => prev.filter(r => r.id !== roadmapId));
+
+      // 1. Delete steps first to satisfy foreign key dependencies
+      const { error: stepsError } = await supabase
+        .from('Roadmap_Steps')
+        .delete()
+        .eq('roadmap_id', roadmapId);
+
+      if (stepsError) throw stepsError;
+
+      // 2. Delete parent roadmap
+      const { error: roadmapError } = await supabase
+        .from('Roadmaps')
+        .delete()
+        .eq('id', roadmapId);
+
+      if (roadmapError) throw roadmapError;
+
+    } catch (error) {
+      console.log('Error deleting roadmap:', error.message);
+      Alert.alert('Delete Failed', 'Could not delete the roadmap from the database.');
+      fetchRoadmaps();
+    }
+  };
+
   const renderStep = (step, index, isLast, roadmapId) => (
     <View key={step.id} className="flex-row mb-1">
       <View className="items-center mr-4 w-6">
@@ -175,11 +203,30 @@ export default function RoadmapsScreen() {
             </View>
           </View>
           
-          <Ionicons 
-            name={isExpanded ? "chevron-up" : "chevron-down"} 
-            size={24} 
-            color="#757575" 
-          />
+          <View className="flex-row items-center">
+            {item.progress === 1 && (
+              <TouchableOpacity 
+                className="mr-3.5 p-2 bg-[#FEE2E2] rounded-full justify-center items-center" 
+                onPress={() => {
+                  Alert.alert(
+                    "Delete Roadmap",
+                    "Are you sure you want to delete this completed roadmap?",
+                    [
+                      { text: "Cancel", style: "cancel" },
+                      { text: "Delete", style: "destructive", onPress: () => deleteRoadmap(item.id) }
+                    ]
+                  );
+                }}
+              >
+                <Ionicons name="trash-outline" size={18} color="#EF4444" />
+              </TouchableOpacity>
+            )}
+            <Ionicons 
+              name={isExpanded ? "chevron-up" : "chevron-down"} 
+              size={24} 
+              color="#757575" 
+            />
+          </View>
         </TouchableOpacity>
 
         {isExpanded && (
