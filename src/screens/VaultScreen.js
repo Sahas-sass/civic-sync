@@ -55,6 +55,7 @@ const dummyPreviewDocuments = [
 
 export default function VaultScreen({ navigation }) {
   const [documents, setDocuments] = useState();
+  const [isUploadingPrivate, setIsUploadingPrivate] = useState(false);
 
   useEffect(() => {
     fetchDocuments();
@@ -90,6 +91,55 @@ export default function VaultScreen({ navigation }) {
       setDocuments(dummyPreviewDocuments);
     } finally {
       setLoading(false);
+    }
+  };
+
+  // Upload private documents
+  const handleUploadPrivateDocument = async () => {
+    try {
+      setIsUploadingPrivate(true);
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        Alert.alert("Authentication Required", "Please log in to upload files.");
+        return;
+      }
+      
+      // Use DocumentPicker to select a file
+      const result = await DocumentPicker.getDocumentAsync({
+        type: ['application/pdf', 'image/*'],
+        copyToCacheDirectory: true,
+      });
+
+      if (result.canceled || !result.assets || result.assets.length === 0) return;
+      const pickedFile = result.assets[0];
+      
+      const response = await fetch(pickedFile.uri);
+      const blob = await response.blob();
+      const destinationPath = `${user.id}/private_${Date.now()}_${pickedFile.name}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from('user_vault')
+        .upload(destinationPath, blob, { contentType: pickedFile.mimeType, upsert: true });
+
+      if (uploadError) throw uploadError;
+
+      const { error: dbError } = await supabase.from('Documents').insert({
+        user_id: user.id,
+        file_name: pickedFile.name,
+        file_path: destinationPath,
+        document_type: 'Private Document',
+        is_ready: true,
+      });
+
+      if (dbError) throw dbError;
+
+      Alert.alert("Vault Secured", `${pickedFile.name} has been safely saved.`);
+      setActiveTab('private');
+      fetchDocuments();
+    } catch (err) {
+      Alert.alert("Upload Failed", err.message);
+    } finally {
+      setIsUploadingPrivate(false);
     }
   };
   
