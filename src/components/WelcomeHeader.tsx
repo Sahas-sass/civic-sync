@@ -56,10 +56,6 @@ export default function WelcomeHeader({
           <Text className="text-xs text-white/70">Welcome Back,</Text>
           <Text className="text-[22px] font-bold text-white mt-0.5">{userName}</Text>
         </View>
-        <TouchableOpacity className="w-11 h-11 rounded-full bg-white/15 justify-center items-center relative">
-          <Ionicons name="notifications-outline" size={24} color="#ffffff" />
-          <View className="absolute top-[12px] right-[13px] w-2 h-2 rounded-full bg-red-500" />
-        </TouchableOpacity>
       </View>
 
       {/* Quick Summary Grid Cards */}
