@@ -254,5 +254,13 @@ async def generate_pdf(payload: GeneratePDFRequest):
         output.write(final_pdf_buffer)
         final_pdf_buffer.seek(0)
 
+        # 5. Upload generated form to private user vault folder structure
+        destination_path = f"{payload.user_id}/{payload.form_type}_completed.pdf"
+        supabase.storage.from_("user_vault").upload(
+            path=destination_path,
+            file=final_pdf_buffer.read(),
+            file_options={"content-type": "application/pdf", "x-upsert": "true"}
+        )
+
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
