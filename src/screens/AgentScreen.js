@@ -15,6 +15,8 @@ import MessageItem from '../components/MessageItem';
 import ChatInput from '../components/ChatInput';
 import AgentStatus from '../components/AgentStatus';
 
+const KeyboardContainer = Platform.OS === 'ios' ? KeyboardAvoidingView : View;
+
 export default function AgentScreen({ navigation }) {
   const [inputText, setInputText] = useState('');
   const [messages, setMessages] = useState([]);
@@ -224,10 +226,12 @@ export default function AgentScreen({ navigation }) {
   }
 
   return (
-    <KeyboardAvoidingView 
+    <KeyboardContainer 
       className="flex-1 bg-background" 
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-      keyboardVerticalOffset={0}
+      {...(Platform.OS === 'ios' ? {
+        behavior: 'padding',
+        keyboardVerticalOffset: 0
+      } : {})}
     >
       {/* Header */}
       <View 
@@ -258,6 +262,6 @@ export default function AgentScreen({ navigation }) {
         onSend={handleSend}
         keyboardVisible={keyboardVisible}
       />
-    </KeyboardAvoidingView>
+    </KeyboardContainer>
   );
 }
