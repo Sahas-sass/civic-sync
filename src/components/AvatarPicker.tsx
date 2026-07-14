@@ -100,7 +100,7 @@ export default function AvatarPicker({
       <TouchableOpacity onPress={pickImage} disabled={!isEditing || uploading}>
         <View className="w-20 h-20 rounded-full bg-[#EFF6FF] justify-center items-center mb-3 border-2 border-primaryBlue overflow-hidden">
           {uploading ? (
-            <ActivityIndicator size="small" color="#0066cc" />
+            <ActivityIndicator size="small" color="#1E3A8A" />
           ) : avatarUrl ? (
             <Image key={avatarUrl} source={{ uri: avatarUrl }} className="w-20 h-20 rounded-full" />
           ) : (

@@ -168,7 +168,7 @@ export default function AgentScreen() {
   if (loadingHistory) {
     return (
       <View className="flex-1 justify-center items-center bg-background">
-        <ActivityIndicator size="large" color="#0066cc" />
+        <ActivityIndicator size="large" color="#1E3A8A" />
         <Text className="text-sm text-textLight mt-3">Loading conversation history...</Text>
       </View>
     );

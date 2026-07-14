@@ -155,7 +155,7 @@ export default function ProfileScreen() {
 
       {loading && !email ? (
         <View className="flex-1 justify-center items-center">
-          <ActivityIndicator size="large" color="#0066cc" />
+          <ActivityIndicator size="large" color="#1E3A8A" />
         </View>
       ) : (
         <ScrollView contentContainerStyle={{ padding: 24, paddingBottom: 100 }} showsVerticalScrollIndicator={false}>

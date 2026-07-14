@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { View, ActivityIndicator } from 'react-native';
+import { verifyInstallation } from 'nativewind';
 
 // Import your screens and navigation
 import WelcomeScreen from './src/screens/WelcomeScreen';
@@ -15,6 +16,7 @@ import { supabase } from './src/services/supabaseClient';
 const Stack = createNativeStackNavigator();
 
 export default function App() {
+  verifyInstallation();
   const [session, setSession] = useState(null);
   const [loading, setLoading] = useState(true);
 
@@ -51,14 +53,23 @@ export default function App() {
             <Stack.Group>
               <Stack.Screen name="MainApp" component={AppNavigator} />
               
-              {/* 3. <-- Added the Admin screen to the active stack */}
               <Stack.Screen 
                 name="Admin" 
                 component={AdminScreen} 
                 options={{ 
                   headerShown: true, // Turns on the top header so users can press "Back"
                   title: 'Data Control Center',
-                  headerBackTitle: 'Back' // Clean back button for iOS
+                  headerBackTitle: 'Back', // Clean back button for iOS
+                  headerStyle: {
+                    backgroundColor: '#FFFFFF',
+                    elevation: 0,
+                    shadowOpacity: 0,
+                  },
+                  headerTitleStyle: {
+                    color: '#1E3A8A',
+                    fontWeight: 'bold',
+                  },
+                  headerTintColor: '#1E3A8A', // Sets back arrow color
                 }} 
               />
             </Stack.Group>

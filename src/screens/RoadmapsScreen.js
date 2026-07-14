@@ -202,7 +202,7 @@ export default function RoadmapsScreen() {
   if (loading && roadmaps.length === 0) {
     return (
       <View className="flex-1 justify-center items-center bg-background">
-        <ActivityIndicator size="large" color="#0066cc" />
+        <ActivityIndicator size="large" color="#1E3A8A" />
       </View>
     );
   }

@@ -8,7 +8,8 @@ import {
   KeyboardAvoidingView, 
   Platform,
   ScrollView,
-  Alert
+  Alert,
+  StatusBar
 } from 'react-native';
 import { supabase } from '../services/supabaseClient';
 
@@ -85,6 +86,7 @@ export default function RegisterScreen({ navigation }) {
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'} 
       className="flex-1 bg-background"
     >
+      <StatusBar barStyle="dark-content" backgroundColor="#F8FAFC" />
       <ScrollView 
         contentContainerStyle={{ flexGrow: 1, justifyContent: 'center' }} 
         className="px-6 py-10"
@@ -153,7 +155,7 @@ export default function RegisterScreen({ navigation }) {
             onPress={() => navigation.navigate('Login')}
           >
             <Text className="text-[#757575] text-sm">
-              Already have an account? <Text className="text-[#0066cc] font-bold">Log in</Text>
+              Already have an account? <Text className="text-primaryBlue font-bold">Log in</Text>
             </Text>
           </TouchableOpacity>
         </View>
