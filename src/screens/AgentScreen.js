@@ -15,7 +15,7 @@ import MessageItem from '../components/MessageItem';
 import ChatInput from '../components/ChatInput';
 import AgentStatus from '../components/AgentStatus';
 
-export default function AgentScreen() {
+export default function AgentScreen({ navigation }) {
   const [inputText, setInputText] = useState('');
   const [messages, setMessages] = useState([]);
   const [agentStatus, setAgentStatus] = useState(null); // Tracks the multi-step reasoning
@@ -40,6 +40,55 @@ export default function AgentScreen() {
       hideSubscription.remove();
     };
   }, []);
+
+  useEffect(() => {
+    const parent = navigation.getParent();
+    if (!parent) return;
+
+    if (keyboardVisible) {
+      parent.setOptions({
+        tabBarStyle: { display: 'none' }
+      });
+    } else {
+      parent.setOptions({
+        tabBarStyle: {
+          position: 'absolute',
+          bottom: 20,
+          left: 20,
+          right: 20,
+          elevation: 0,
+          backgroundColor: '#FFFFFF',
+          borderRadius: 20,
+          height: 70,
+          shadowColor: '#1E3A8A',
+          shadowOffset: { width: 0, height: 4 },
+          shadowOpacity: 0.1,
+          shadowRadius: 10,
+          borderTopWidth: 0,
+        }
+      });
+    }
+
+    return () => {
+      parent.setOptions({
+        tabBarStyle: {
+          position: 'absolute',
+          bottom: 20,
+          left: 20,
+          right: 20,
+          elevation: 0,
+          backgroundColor: '#FFFFFF',
+          borderRadius: 20,
+          height: 70,
+          shadowColor: '#1E3A8A',
+          shadowOffset: { width: 0, height: 4 },
+          shadowOpacity: 0.1,
+          shadowRadius: 10,
+          borderTopWidth: 0,
+        }
+      });
+    };
+  }, [keyboardVisible, navigation]);
 
   const fetchChatHistory = async () => {
     try {
@@ -178,7 +227,7 @@ export default function AgentScreen() {
     <KeyboardAvoidingView 
       className="flex-1 bg-background" 
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-      keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}
+      keyboardVerticalOffset={0}
     >
       {/* Header */}
       <View 

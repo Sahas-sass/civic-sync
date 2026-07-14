@@ -1,7 +1,8 @@
+import React, { useState, useEffect } from 'react';
 import { Ionicons } from '@expo/vector-icons';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { BlurView } from 'expo-blur';
-import { Platform, StyleSheet, TouchableOpacity } from 'react-native';
+import { Platform, StyleSheet, TouchableOpacity, Keyboard } from 'react-native';
 import AgentScreen from '../screens/AgentScreen';
 import HomeScreen from '../screens/HomeScreen';
 import ProfileScreen from '../screens/ProfileScreen';
@@ -26,6 +27,31 @@ const CustomTabBarButton = ({ children, onPress }) => (
     </BlurView>
   </TouchableOpacity>
 );
+
+// Keyboard-aware wrapper for the custom floating button
+const FloatingTabBarButton = (props) => {
+  const [keyboardVisible, setKeyboardVisible] = useState(false);
+
+  useEffect(() => {
+    const showSubscription = Keyboard.addListener(
+      Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow',
+      () => setKeyboardVisible(true)
+    );
+    const hideSubscription = Keyboard.addListener(
+      Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide',
+      () => setKeyboardVisible(false)
+    );
+
+    return () => {
+      showSubscription.remove();
+      hideSubscription.remove();
+    };
+  }, []);
+
+  if (keyboardVisible) return null;
+
+  return <CustomTabBarButton {...props} />;
+};
 
 export default function AppNavigator() {
   return (
@@ -87,9 +113,7 @@ export default function AppNavigator() {
           tabBarIcon: ({ focused }) => (
             <Ionicons name="sparkles" size={28} color={colors.primaryBlue} />
           ),
-          tabBarButton: (props) => (
-            <CustomTabBarButton {...props} />
-          ),
+          tabBarButton: (props) => <FloatingTabBarButton {...props} />,
         }}
       />
 
