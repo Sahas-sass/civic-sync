@@ -6,10 +6,13 @@ from fastapi import FastAPI, UploadFile, File, Form, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from dotenv import load_dotenv
-from supabase import create_client
+from supabase import create_client, Client
 from langchain_google_genai import GoogleGenerativeAIEmbeddings
 from google import genai
 from google.genai import types
+from reportlab.pdfgen import canvas
+from pypdf import PdfReader, PdfWriter
+import supabase
 
 # Load environment variables (force override of cached shell variables)
 load_dotenv(override=True)
@@ -195,3 +198,81 @@ async def chat_endpoint(request: ChatRequest):
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8000)
+
+class GeneratePDFRequest(BaseModel):
+    user_id: str
+    form_type: str
+
+@app.post("/api/generate-pdf")
+async def generate_pdf(payload: GeneratePDFRequest):
+    try:
+        # 1. Fetch user profile data 
+        profile_res = supabase.table("Profiles").select("full_name", "nic_number").eq("id", payload.user_id).execute()
+        if not profile_res.data:
+            raise HTTPException(status_code=404, detail="User profile not found. Please complete profile details first.")
+        
+        user_info = profile_res.data[0]
+        full_name = user_info.get("full_name")
+        nic_number = user_info.get("nic_number")
+        
+        if not full_name or not nic_number:
+            raise HTTPException(status_code=400, detail="Missing Name or NIC in secure profile.")   
+
+        # 2. Download the blank template from template bucket
+        template_filename = f"{payload.form_type}_blank.pdf"
+        try:
+            blank_pdf_bytes = supabase.storage.from_("templates").download(template_filename)
+        except Exception:
+            raise HTTPException(status_code=404, detail="Blank form template not found in vault templates.")
+
+        # 3. Create an overlay PDF layer with coordinates using ReportLab
+        packet = io.BytesIO()
+        can = canvas.Canvas(packet)
+
+        # Adjust these X/Y pixel coordinates matching the layout design of your form template
+        can.drawString(150, 650, f"{full_name}")
+        can.drawString(150, 600, f"{nic_number}")
+        can.save()
+        
+        packet.seek(0)
+        overlay_pdf = PdfReader(packet)
+
+        # 4. Merge overlay coordinates onto the original form template using PyPDF
+        existing_pdf = PdfReader(io.BytesIO(blank_pdf_bytes))
+        output = PdfWriter()
+        
+        # Merge first page template
+        page = existing_pdf.pages[0]
+        page.merge_page(overlay_pdf.pages[0])
+        output.add_page(page)
+        
+        # Add remaining pages untouched if multi-page
+        for page_num in range(1, len(existing_pdf.pages)):
+            output.add_page(existing_pdf.pages[page_num])
+            
+        final_pdf_buffer = io.BytesIO()
+        output.write(final_pdf_buffer)
+        final_pdf_buffer.seek(0)
+
+        # 5. Upload generated form to private user vault folder structure
+        destination_path = f"{payload.user_id}/{payload.form_type}_completed.pdf"
+        supabase.storage.from_("user_vault").upload(
+            path=destination_path,
+            file=final_pdf_buffer.read(),
+            file_options={"content-type": "application/pdf", "x-upsert": "true"}
+        )
+
+        # 6. Insert record tracking information into Documents table
+        doc_entry = {
+            "user_id": payload.user_id,
+            "file_name": f"{payload.form_type.replace('_', ' ').title()} Form.pdf",
+            "file_path": destination_path,
+            "document_type": "Official Form",
+            "is_ready": True
+        }
+        supabase.table("Documents").insert(doc_entry).execute()
+
+        return {"status": "success", "message": "Document generated successfully!", "file_path": destination_path}
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
