@@ -4,21 +4,11 @@ import {
   Platform,
   Text,
   TouchableOpacity,
-  View,
-  ActivityIndicator, 
-  Alert,
-  ScrollView
+  View
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
-// Native device feature imports
-import * as FileSystem from 'expo-file-system';
-import * as Sharing from 'expo-sharing';
-import * as DocumentPicker from 'expo-document-picker';
-
-import { supabase } from '../services/supabaseClient';
-
-const dummyPreviewDocuments = [
+const initialDocuments = [
   {
     id: '1',
     title: 'BR_Form_1_AutoFilled.pdf',
@@ -43,106 +33,11 @@ const dummyPreviewDocuments = [
     size: '4.8 MB',
     isReady: true,
   },
-  {
-    id: '4',
-    title: 'Blank_Vehicle_Registration_Form.pdf',
-    type: 'Custom Template',
-    date: 'Oct 15, 2026',
-    size: '4.8 MB',
-    isReady: true,
-  },
 ];
 
 export default function VaultScreen({ navigation }) {
-  const [documents, setDocuments] = useState();
-  const [isUploadingPrivate, setIsUploadingPrivate] = useState(false);
+  const [documents, setDocuments] = useState(initialDocuments);
 
-  useEffect(() => {
-    fetchDocuments();
-  }, []);
-
-  // Fetches user documents (including Custom Templates) from Supabase
-  const fetchDocuments = async () => {
-    try {
-      setLoading(true);
-      // Get the current authenticated user
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) {
-        setDocuments(dummyPreviewDocuments);
-        return;
-      }
-
-      // Fetch documents from Supabase for the authenticated user
-      const { data, error } = await supabase
-        .from('Documents')
-        .select('*')
-        .eq('user_id', user.id)
-        .order('created_at', { ascending: false });
-
-      if (error) throw error;
-      // Update with real docs and if no docs are found, use dummy preview documents
-      if (data && data.length > 0) {
-        setDocuments(data);
-      } else {
-        setDocuments(dummyPreviewDocuments);
-      }
-    } catch (err) {
-      console.error("Error fetching documents:", err);
-      setDocuments(dummyPreviewDocuments);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // Upload private documents
-  const handleUploadPrivateDocument = async () => {
-    try {
-      setIsUploadingPrivate(true);
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) {
-        Alert.alert("Authentication Required", "Please log in to upload files.");
-        return;
-      }
-      
-      // Use DocumentPicker to select a file
-      const result = await DocumentPicker.getDocumentAsync({
-        type: ['application/pdf', 'image/*'],
-        copyToCacheDirectory: true,
-      });
-
-      if (result.canceled || !result.assets || result.assets.length === 0) return;
-      const pickedFile = result.assets[0];
-      
-      const response = await fetch(pickedFile.uri);
-      const blob = await response.blob();
-      const destinationPath = `${user.id}/private_${Date.now()}_${pickedFile.name}`;
-
-      const { error: uploadError } = await supabase.storage
-        .from('user_vault')
-        .upload(destinationPath, blob, { contentType: pickedFile.mimeType, upsert: true });
-
-      if (uploadError) throw uploadError;
-
-      const { error: dbError } = await supabase.from('Documents').insert({
-        user_id: user.id,
-        file_name: pickedFile.name,
-        file_path: destinationPath,
-        document_type: 'Private Document',
-        is_ready: true,
-      });
-
-      if (dbError) throw dbError;
-
-      Alert.alert("Vault Secured", `${pickedFile.name} has been safely saved.`);
-      setActiveTab('private');
-      fetchDocuments();
-    } catch (err) {
-      Alert.alert("Upload Failed", err.message);
-    } finally {
-      setIsUploadingPrivate(false);
-    }
-  };
-  
   const renderDocument = ({ item }) => (
     <View className="bg-white rounded-2xl p-4 mb-3 flex-row items-center border border-[#E2E8F0]">
       <View className="w-[50px] h-[50px] rounded-xl bg-[#F8FAFC] justify-center items-center mr-4">
