@@ -229,5 +229,13 @@ async def generate_pdf(payload: GeneratePDFRequest):
         packet = io.BytesIO()
         can = canvas.Canvas(packet)
 
+        # Adjust these X/Y pixel coordinates matching the layout design of your form template
+        can.drawString(150, 650, f"{full_name}")
+        can.drawString(150, 600, f"{nic_number}")
+        can.save()
+        
+        packet.seek(0)
+        overlay_pdf = PdfReader(packet)
+
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
