@@ -237,5 +237,22 @@ async def generate_pdf(payload: GeneratePDFRequest):
         packet.seek(0)
         overlay_pdf = PdfReader(packet)
 
+        # 4. Merge overlay coordinates onto the original form template using PyPDF
+        existing_pdf = PdfReader(io.BytesIO(blank_pdf_bytes))
+        output = PdfWriter()
+        
+        # Merge first page template
+        page = existing_pdf.pages[0]
+        page.merge_page(overlay_pdf.pages[0])
+        output.add_page(page)
+        
+        # Add remaining pages untouched if multi-page
+        for page_num in range(1, len(existing_pdf.pages)):
+            output.add_page(existing_pdf.pages[page_num])
+            
+        final_pdf_buffer = io.BytesIO()
+        output.write(final_pdf_buffer)
+        final_pdf_buffer.seek(0)
+
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
