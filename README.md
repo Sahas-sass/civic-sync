@@ -268,9 +268,9 @@ CivicSync-AI/
 ## 1. Clone Repository
 
 ```bash
-git clone https://github.com/yourusername/CivicSync-AI.git
+git clone https://github.com/yourusername/civic-sync.git
 
-cd CivicSync-AI
+cd civic-sync.git
 ```
 
 ---
