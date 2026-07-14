@@ -38,6 +38,17 @@ venv/
 *.pyc
 __pycache__/
 
+# Python bytecode / caches
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Environment files
+.env
+.venv/
+ENV/
+env/
+
 # typescript
 *.tsbuildinfo
 
