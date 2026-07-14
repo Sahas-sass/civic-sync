@@ -6,10 +6,13 @@ from fastapi import FastAPI, UploadFile, File, Form, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from dotenv import load_dotenv
-from supabase import create_client
+from supabase import create_client, Client
 from langchain_google_genai import GoogleGenerativeAIEmbeddings
 from google import genai
 from google.genai import types
+from reportlab.pdfgen import canvas
+from pypdf import PdfReader, PdfWriter
+import supabase
 
 # Load environment variables (force override of cached shell variables)
 load_dotenv(override=True)
@@ -195,3 +198,25 @@ async def chat_endpoint(request: ChatRequest):
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8000)
+
+class GeneratePDFRequest(BaseModel):
+    user_id: str
+    form_type: str
+
+@app.post("/api/generate-pdf")
+async def generate_pdf(payload: GeneratePDFRequest):
+    try:
+        # 1. Fetch user profile data 
+        profile_res = supabase.table("Profiles").select("full_name", "nic_number").eq("id", payload.user_id).execute()
+        if not profile_res.data:
+            raise HTTPException(status_code=404, detail="User profile not found. Please complete profile details first.")
+        
+        user_info = profile_res.data[0]
+        full_name = user_info.get("full_name")
+        nic_number = user_info.get("nic_number")
+        
+        if not full_name or not nic_number:
+            raise HTTPException(status_code=400, detail="Missing Name or NIC in secure profile.")   
+    
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
