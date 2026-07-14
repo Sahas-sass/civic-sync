@@ -260,7 +260,6 @@ export default function AgentScreen({ navigation }) {
         value={inputText}
         onChangeText={setInputText}
         onSend={handleSend}
-        keyboardVisible={keyboardVisible}
       />
     </KeyboardContainer>
   );
