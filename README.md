@@ -8,7 +8,7 @@
   <img src="https://img.shields.io/badge/Python-3776AB?style=for-the-badge&logo=python&logoColor=white"/>
   <img src="https://img.shields.io/badge/Supabase-3ECF8E?style=for-the-badge&logo=supabase&logoColor=white"/>
   <img src="https://img.shields.io/badge/PostgreSQL-316192?style=for-the-badge&logo=postgresql&logoColor=white"/>
-  <img src="https://img.shields.io/badge/Google_Gemini_2.5_Flash-4285F4?style=for-the-badge&logo=google&logoColor=white"/>
+  <img src="https://img.shields.io/badge/Google_Gemini_3.1_Flash_Lite-4285F4?style=for-the-badge&logo=google&logoColor=white"/>
   <img src="https://img.shields.io/badge/LangChain-121212?style=for-the-badge"/>
 </p>
 
@@ -16,386 +16,449 @@
 
 ## 📖 Overview
 
-Government procedures are often difficult to understand due to lengthy legal documents, complex administrative processes, and scattered information across multiple agencies.
+Navigating government administrative procedures is often challenging due to dense legal documents, complex bureaucracies, and fragmented information across different departments. 
 
-**CivicSync AI** is an intelligent citizen assistance platform that simplifies these challenges using **Retrieval-Augmented Generation (RAG)** and **Generative AI**. Instead of forcing citizens to navigate hundreds of pages of legal documentation, CivicSync provides personalized guidance, step-by-step roadmaps, secure document management, and trustworthy AI-powered assistance based on official Sri Lankan government regulations.
-
-Our goal is to make government services **simpler, faster, and more accessible** for every Sri Lankan citizen.
+**CivicSync AI** is a mobile-first intelligent assistant platform designed to simplify public services for Sri Lankan citizens. By combining **Retrieval-Augmented Generation (RAG)**, secure digital vaults, and generative AI models, the platform turns complex official guidelines into conversational support, custom actionable checklists, and auto-populated PDF application forms.
 
 ---
 
-# ✨ Key Features
+## ✨ Key Features & Modules
 
-## 🤖 AI Legal Assistant
+### 🤖 Conversational AI Assistant
+Ask questions in natural language and receive context-aware, structured answers strictly derived from official Sri Lankan regulations and laws.
+* **Powered by Gemini**: Driven by `gemini-3.1-flash-lite` for fast, cost-effective, and accurate responses.
+* **Strict Guardrails**: Prevents hallucination by matching queries directly against verified legal text.
 
-Ask questions in natural language and receive structured, context-aware guidance based on verified Sri Lankan government documents.
+### 📚 Semantic RAG Database
+* **Vector Similarity Search**: Converts documents into vector representations to fetch the most relevant rules before replying.
+* **Scanned PDF Fallback**: Ingestion pipeline automatically detects and processes scanned images/PDFs to extract text.
 
-- Conversational AI powered by **Google Gemini 2.5 Flash**
-- Human-friendly explanations
-- Personalized recommendations
-- Structured responses
+### 🗺️ Dynamic Roadmap Engine
+* **Interactive Checklists**: If a citizen asks about a multi-step process (e.g., registering a business, replacing an NIC, or renewing a passport), the AI generates a customized step-by-step roadmap.
+* **Progress Tracking**: Steps are saved in Supabase and can be toggled by the user to monitor progress.
 
----
+### 🔐 Secure Document Vault
+* **Private Cloud Storage**: Encrypted cloud storage for sensitive files (National ID scans, certificates, passports).
+* **Row-Level Security (RLS)**: Enforces strict data isolation, ensuring users only see their own files.
 
-## 📚 Intelligent RAG Pipeline
-
-Instead of relying solely on the language model, CivicSync retrieves relevant legal information directly from official government documents before generating responses.
-
-This significantly improves:
-
-- Accuracy
-- Reliability
-- Transparency
-- Reduced AI hallucinations
+### 📄 Smart Form Auto-Filling
+* **Automated PDF Overlays**: Select user details (name, NIC, address) from a secure profile, and the system dynamically paints them onto official government PDF forms (using ReportLab coordinates and PyPDF merging), uploading the generated document directly to the private vault.
 
 ---
 
-## 🗺️ Dynamic Roadmap Engine
+## 🧠 AI Features Deep-Dive
 
-Government procedures are automatically converted into interactive roadmaps.
+### 🤖 Summary of AI Capabilities: What, How & Implementation
 
-Features include:
+| AI Feature (What it can do) | Underlying Mechanism (How it does it) | Tech Stack & Code Implementation (How it is implemented) |
+| :--- | :--- | :--- |
+| **Conversational Legal Assistance** | Uses retrieval-augmented search to match user prompts against active legal documents, passing the context to Gemini for hallucination-free guidance. | Configured with `gemini-3.1-flash-lite` via the official `google-genai` Python SDK. Handled in `fetch_rag_context` and `chat_endpoint` inside [server.py](file:///d:/OneDrive/Desktop/civic-sync/civic-sync/backend/server.py). |
+| **Legal Document Vectorization** | Parses official PDFs, chunks them, and generates semantic vector embeddings to represent the knowledge base. | Uses LangChain's `PyPDFLoader` and `RecursiveCharacterTextSplitter` chunking, generating 1536-dimensional embeddings with `gemini-embedding-001`. Handled in `process_pdf` inside [ingest.py](file:///d:/OneDrive/Desktop/civic-sync/civic-sync/backend/ingest.py). |
+| **Semantic Similarity Search** | Translates the user's natural language question into an embedding and runs a cosine distance match against database documents. | Stored in PostgreSQL with `pgvector`. A custom database RPC function `match_documents` is triggered via the Supabase client inside [server.py](file:///d:/OneDrive/Desktop/civic-sync/civic-sync/backend/server.py). |
+| **Dynamic Checklist Generation** | Recognizes if a civic process is requested and structures steps as JSON (title, description, details). | Handled via Gemini system instructions forcing a strict JSON schema (`response_mime_type="application/json"`). Stored via the database RPC function `create_roadmap_from_json` inside [AgentScreen.js](file:///d:/OneDrive/Desktop/civic-sync/civic-sync/src/screens/AgentScreen.js). |
+| **Smart PDF Form Filling** | Automatically extracts personal identifier data and dynamically overlays details onto blank governmental forms. | Implemented using ReportLab `canvas.Canvas` to draw strings at coordinate overlays, merging pages using PyPDF `PdfReader`/`PdfWriter`. Handled in the `/api/generate-pdf` endpoint inside [server.py](file:///d:/OneDrive/Desktop/civic-sync/civic-sync/backend/server.py). |
 
-- Step-by-step guidance
-- Progress tracking
-- Completion status
-- Personalized task lists
-- Clear action items
+### 1. The RAG Retrieval Pipeline
+To eliminate hallucinations, CivicSync uses a specialized Retrieval-Augmented Generation pipeline:
+* **Ingestion ([ingest.py](file:///d:/OneDrive/Desktop/civic-sync/civic-sync/backend/ingest.py))**:
+  * Loads documents using LangChain's `PyPDFLoader`.
+  * If no selectable text is found, it runs fallback image/scanned PDF extraction.
+  * Splitting: Uses `RecursiveCharacterTextSplitter` with a `chunk_size` of `1000` characters and `chunk_overlap` of `200` characters.
+  * Embeddings: Generates 1536-dimensional embeddings utilizing `gemini-embedding-001`.
+  * Storage: Chunks are stored in the `legal_documents` table in Supabase.
+
+  ```python
+  # Code Snippet from ingest.py (Text Chunking and Embedding generation)
+  text_splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=200)
+  chunks = text_splitter.split_documents(pages)
+  
+  for chunk in chunks:
+      vector = embeddings.embed_query(chunk.page_content)
+      data = {
+          "content": chunk.page_content,
+          "metadata": {"source": doc_title, "page": page_num},
+          "embedding": vector
+      }
+      supabase.table("legal_documents").insert(data).execute()
+  ```
+
+* **Retrieval ([server.py](file:///d:/OneDrive/Desktop/civic-sync/civic-sync/backend/server.py))**:
+  * The user's query is converted to a vector embedding using `gemini-embedding-001`.
+  * The vector is queried against Supabase via a PostgreSQL RPC function named `match_documents`, returning the top 3 best matching document chunks with a similarity score of at least `0.3`.
+
+  ```python
+  # Code Snippet from server.py (Semantic Similarity RPC Query)
+  query_vector = embeddings.embed_query(query)
+  response = supabase_client.rpc(
+      'match_documents', 
+      {
+          'query_embedding': query_vector,
+          'match_threshold': 0.3,
+          'match_count': 3
+      }
+  ).execute()
+  ```
+
+### 2. Google Gemini 3.1 Flash Lite Integration
+* **Structured Output Model**: The API is configured using the official `google-genai` SDK and queries `gemini-3.1-flash-lite`.
+* **JSON Schema Enforcement**: The system prompts Gemini to enforce a strict JSON output matching this structure:
+  ```json
+  {
+    "chat_reply": "Conversational explanation answering the user's question...",
+    "roadmap_trigger": {
+      "title": "Checklist Title (e.g. Small Business Registration)",
+      "description": "Brief description of the process",
+      "steps": [
+        {
+          "step_order": 1,
+          "title": "Step Title (e.g. Name Approval)",
+          "detail": "Actionable explanation of what to do"
+        }
+      ]
+    }
+  }
+  ```
+  *(If the query is a simple conversational message and does not represent a civic process, `roadmap_trigger` is returned as `null`.)*
+
+  ```python
+  # Code Snippet from server.py (Calling Gemini Client with Structured Response Output)
+  client = genai.Client(api_key=gemini_key)
+  response = client.models.generate_content(
+      model="gemini-3.1-flash-lite",
+      contents=f"User Question: {message_text}\n{context}",
+      config=types.GenerateContentConfig(
+          system_instruction=system_instruction,
+          response_mime_type="application/json"
+      )
+  )
+  ```
+
+### 3. Dynamic Checklist Generation
+* When the React Native app ([AgentScreen.js](file:///d:/OneDrive/Desktop/civic-sync/civic-sync/src/screens/AgentScreen.js)) receives a response containing `roadmap_trigger`, it invokes a Supabase Database RPC function `create_roadmap_from_json`.
+* This function automatically splits and saves the roadmap and its individual steps, immediately alerting the user and populating the interactive checklists in the Roadmaps screen ([RoadmapsScreen.js](file:///d:/OneDrive/Desktop/civic-sync/civic-sync/src/screens/RoadmapsScreen.js)).
+
+### 4. ReportLab PDF Canvas Filling
+* When the user requests a completed government form ([VaultScreen.js](file:///d:/OneDrive/Desktop/civic-sync/civic-sync/src/screens/VaultScreen.js)), the backend fetches the user's profile details (`Profiles` table) and downloads a blank template from Supabase Storage.
+* An overlay PDF page is dynamically created in-memory using ReportLab `canvas.Canvas`.
+* PyPDF `merge_page` overlays the printed values onto the blank template. The combined PDF is then saved in the private `user_vault` storage bucket under the user's specific path (`{user_id}/{form_type}_completed.pdf`).
+
+  ```python
+  # Code Snippet from server.py (Generating and Merging Form Coordinates)
+  packet = io.BytesIO()
+  can = canvas.Canvas(packet)
+  can.drawString(150, 650, f"{full_name}")
+  can.drawString(150, 600, f"{nic_number}")
+  can.save()
+  
+  packet.seek(0)
+  overlay_pdf = PdfReader(packet)
+  existing_pdf = PdfReader(io.BytesIO(blank_pdf_bytes))
+  
+  output = PdfWriter()
+  page = existing_pdf.pages[0]
+  page.merge_page(overlay_pdf.pages[0])
+  output.add_page(page)
+  ```
 
 ---
 
-## 🔐 Secure Document Vault
-
-Store important government documents securely.
-
-Includes:
-
-- National IDs
-- Passports
-- Birth certificates
-- Other official documents
-
-Additional capabilities:
-
-- Secure cloud storage
-- Auto-filled government forms
-- Quick document retrieval
-
----
-
-## 📄 Smart Form Assistance
-
-Users can automatically populate government application forms using stored information, minimizing repetitive manual entry.
-
----
-
-# 🏗️ System Architecture
+## 🏗️ System Architecture
 
 ```
                 Government PDFs
                        │
                        ▼
-               Document Processing
+               Document Processing (ingest.py)
                        │
                        ▼
-         Recursive Text Chunking (LangChain)
+          Recursive Text Chunking (LangChain)
                        │
                        ▼
-        Gemini Embedding Model (gemini-embedding-001)
+         Gemini Embedding Model (gemini-embedding-001)
                        │
                        ▼
-      Supabase PostgreSQL + pgvector Database
+       Supabase PostgreSQL + pgvector Database
                        │
                        ▼
-      Similarity Search (Relevant Legal Chunks)
+       Similarity Search (Relevant Legal Chunks)
                        │
                        ▼
-            Google Gemini 2.5 Flash
+             Google Gemini 3.1 Flash Lite
                        │
-          ┌────────────┴────────────┐
-          ▼                         ▼
-    Chat Response             Action Roadmap
+           ┌────────────┴────────────┐
+           ▼                         ▼
+     Chat Response             Action Roadmap
 ```
 
 ---
 
-# 🧠 AI Workflow (RAG Pipeline)
-
-## 1. Document Ingestion
-
-Official government PDFs are processed using a custom ingestion pipeline.
-
-- PDF extraction
-- Cleaning
-- Chunking using LangChain's `RecursiveCharacterTextSplitter`
-
----
-
-## 2. Embedding Generation
-
-Each document chunk is transformed into vector embeddings using:
-
-**gemini-embedding-001**
-
-These embeddings capture the semantic meaning of the legal text.
-
----
-
-## 3. Vector Storage
-
-Embeddings are stored inside Supabase PostgreSQL using the **pgvector** extension.
-
-Each record contains:
-
-- Document metadata
-- Text chunk
-- Embedding vector
-- Source information
-
----
-
-## 4. Intelligent Retrieval
-
-When a citizen submits a question:
-
-- The query is embedded
-- Similarity search is performed
-- Most relevant legal sections are retrieved
-
----
-
-## 5. AI Response Generation
-
-The retrieved legal context is supplied to **Google Gemini 2.5 Flash**, which produces a structured JSON response.
-
-Example:
-
-```json
-{
-  "chat_reply": "...",
-  "roadmap_trigger": {
-    "title": "...",
-    "steps": [
-      "...",
-      "...",
-      "..."
-    ]
-  }
-}
-```
-
----
-
-# 🛠️ Technology Stack
-
-## Frontend
-
-- React Native
-- Expo
-
----
-
-## Backend
-
-- FastAPI
-- Python
-
-Hosted on:
-
-- Render
-
----
-
-## AI & Machine Learning
-
-- Google Gemini 2.5 Flash
-- LangChain
-- gemini-embedding-001
-
----
-
-## Database
-
-- Supabase PostgreSQL
-- pgvector
-
----
-
-## Storage
-
-- Supabase Storage
-
----
-
-## Document Processing
-
-- Python PDF Processing
-- Custom Auto-fill Scripts
-
----
-
-# 📂 Project Structure
+## 📂 Project Structure
 
 ```
 CivicSync-AI/
 │
-├── backend/
-│   ├── server.py
-│   ├── ingest.py
-│   ├── rag_pipeline.py
-│   ├── requirements.txt
-│   └── .env
+├── backend/                  # Python FastAPI Backend
+│   ├── server.py             # Main entry point & API endpoints
+│   ├── ingest.py             # Document parser, chunker & embedding pipeline
+│   ├── requirements.txt      # Backend Python dependencies
+│   └── test_law.pdf          # Test file for parsing guidelines
 │
-├── frontend/
-│   ├── components/
-│   ├── screens/
+├── src/                      # React Native Expo Frontend
+│   ├── components/           # Reusable UI elements (MessageItem, ChatInput, etc.)
+│   ├── global.css            # Global Tailwind/NativeWind style configurations
 │   ├── navigation/
-│   └── assets/
+│   │   └── AppNavigator.js   # Bottom Tab navigation & central AI floating button
+│   ├── screens/
+│   │   ├── WelcomeScreen.js  # Introduction splash screen
+│   │   ├── LoginScreen.js    # Authentication sign-in
+│   │   ├── RegisterScreen.js # Authentication signup
+│   │   ├── HomeScreen.js     # Home dashboard
+│   │   ├── AgentScreen.js    # AI Chat Assistant interface
+│   │   ├── RoadmapsScreen.js # Interactive checklist tracker
+│   │   ├── VaultScreen.js    # Secure personal file scanner and uploader
+│   │   ├── ProfileScreen.js  # Personal data management (NIC, Full name, etc.)
+│   │   └── AdminScreen.js    # Knowledge base document upload dashboard
+│   ├── services/
+│   │   ├── apiConfig.js      # Global backend gateway URL config
+│   │   └── supabaseClient.js # Supabase client configurations with AsyncStorage
+│   └── theme/                # Global color schemes
 │
-├── storage/
-│
-├── documents/
-│
-├── README.md
-│
-└── package.json
+├── App.js                    # Mobile application entry point
+├── package.json              # Frontend Node dependencies & scripts
+├── babel.config.js           # Babel and Tailwind configurations
+├── tailwind.config.js        # NativeWind configuration
+└── tsconfig.json             # TypeScript configurations
 ```
 
 ---
 
-# ⚙️ Installation
+## ⚙️ Installation & Setup
 
-## 1. Clone Repository
-
+### 1. Clone the Repository
 ```bash
 git clone https://github.com/yourusername/civic-sync.git
-
-cd civic-sync.git
+cd civic-sync
 ```
 
----
-
-## 2. Backend Setup
-
+### 2. Backend Setup
+Set up a Python virtual environment and install the required dependencies:
 ```bash
 cd backend
+python -m venv venv
+
+# Activate Virtual Env (Windows)
+.\venv\Scripts\activate
+# Activate Virtual Env (macOS/Linux)
+source venv/bin/activate
 
 pip install -r requirements.txt
-
-uvicorn server:app --reload
 ```
 
-Backend will run on:
-
+Create a `.env` file in the root `civic-sync` folder or inside the `backend` folder:
+```env
+SUPABASE_URL=https://your-project.supabase.co
+SUPABASE_SERVICE_ROLE_KEY=your-supabase-service-role-key
+GEMINI_API_KEY=your-google-gemini-api-key
 ```
-http://localhost:8000
-```
 
----
-
-## 3. Frontend Setup
-
+Run the backend development server:
 ```bash
-npm install
+uvicorn server:app --reload --host 0.0.0.0 --port 8000
+```
+The API gateway will run on `http://localhost:8000`.
 
+### 3. Frontend Setup
+Install npm packages:
+```bash
+cd ..
+npm install
+```
+
+Configure `src/services/apiConfig.js`:
+Change `BACKEND_URL` to match your local IP address (so your physical mobile device/simulator can connect):
+```javascript
+export const BACKEND_URL = 'http://192.168.x.x:8000';
+```
+
+Launch the Expo CLI server:
+```bash
 npx expo start
 ```
+* Press `a` for Android Emulator.
+* Press `i` for iOS Simulator.
+* Scan the QR Code using the Expo Go app on a physical device.
 
 ---
 
-# 🔑 Environment Variables
+## 🗄️ Database & Supabase Configuration
 
-Create a `.env` file inside the backend directory.
+### 1. SQL Initialization Script
+Run the following SQL commands in your Supabase **SQL Editor** to create the necessary extensions, tables, policies, and database functions:
 
-```env
-SUPABASE_URL=
+```sql
+-- 1. Enable the vector database extension
+create extension if not exists vector;
 
-SUPABASE_SERVICE_ROLE_KEY=
+-- 2. Legal Documents Table (Used for RAG context storage)
+create table public.legal_documents (
+  id bigserial primary key,
+  content text not null,
+  metadata jsonb,
+  embedding vector(1536),
+  created_at timestamp with time zone default timezone('utc'::text, now()) not null
+);
 
-GOOGLE_API_KEY=
+-- 3. Profiles Table (Holds secure citizen metadata)
+create table public.profiles (
+  id uuid references auth.users on delete cascade primary key,
+  full_name text,
+  nic_number text,
+  phone text,
+  avatar_url text,
+  updated_at timestamp with time zone default timezone('utc'::text, now()) not null
+);
+
+-- 4. Chat Messages History Table
+create table public."ChatMessages" (
+  id bigserial primary key,
+  user_id uuid references auth.users on delete cascade not null,
+  sender text not null, -- 'user' or 'ai'
+  text text not null,
+  created_at timestamp with time zone default timezone('utc'::text, now()) not null
+);
+
+-- 5. User Private Vault Files Table
+create table public.user_private_files (
+  id uuid default gen_random_uuid() primary key,
+  user_id uuid references auth.users on delete cascade not null,
+  file_name text not null,
+  file_path text not null,
+  document_type text,
+  extracted_data jsonb default '{}'::jsonb,
+  uploaded_at timestamp with time zone default timezone('utc'::text, now()) not null
+);
+
+-- 6. Documents Table (Used for backend completed forms tracking)
+create table public."Documents" (
+  id bigserial primary key,
+  user_id uuid references auth.users on delete cascade not null,
+  file_name text not null,
+  file_path text not null,
+  document_type text,
+  is_ready boolean default false,
+  created_at timestamp with time zone default timezone('utc'::text, now()) not null
+);
+
+-- 7. Roadmaps Table
+create table public."Roadmaps" (
+  id uuid default gen_random_uuid() primary key,
+  user_id uuid references auth.users on delete cascade not null,
+  title text not null,
+  description text,
+  created_at timestamp with time zone default timezone('utc'::text, now()) not null
+);
+
+-- 8. Roadmap Steps Table
+create table public."Roadmap_Steps" (
+  id uuid default gen_random_uuid() primary key,
+  roadmap_id uuid references public."Roadmaps" on delete cascade not null,
+  step_order integer not null,
+  title text not null,
+  detail text,
+  is_completed boolean default false not null,
+  created_at timestamp with time zone default timezone('utc'::text, now()) not null
+);
 ```
 
----
+### 2. Database RPC Functions
 
-# 🗄️ Database Requirements
+Run these additional queries to register the necessary database RPC functions:
 
-Enable the following extension in Supabase:
-
+#### A. RAG Match Documents (`match_documents`)
+```sql
+create or replace function match_documents (
+  query_embedding vector(1536),
+  match_threshold float,
+  match_count int
+)
+returns table (
+  id bigint,
+  content text,
+  metadata jsonb,
+  similarity float
+)
+language plpgsql stable
+as $$
+begin
+  return query
+  select
+    legal_documents.id,
+    legal_documents.content,
+    legal_documents.metadata,
+    1 - (legal_documents.embedding <=> query_embedding) as similarity
+  from legal_documents
+  where 1 - (legal_documents.embedding <=> query_embedding) > match_threshold
+  order by legal_documents.embedding <=> query_embedding asc
+  limit match_count;
+end;
+$$;
 ```
-pgvector
+
+#### B. Parse and Store Checklists (`create_roadmap_from_json`)
+```sql
+create or replace function create_roadmap_from_json(
+  p_user_id uuid,
+  p_title text,
+  p_description text,
+  p_steps jsonb
+)
+returns void
+language plpgsql
+security definer
+as $$
+declare
+  v_roadmap_id uuid;
+  v_step jsonb;
+begin
+  -- Insert parent roadmap metadata
+  insert into public."Roadmaps" (user_id, title, description)
+  values (p_user_id, p_title, p_description)
+  returning id into v_roadmap_id;
+
+  -- Iterate through JSON steps list and populate individual steps
+  for v_step in select * from jsonb_array_elements(p_steps)
+  loop
+    insert into public."Roadmap_Steps" (roadmap_id, step_order, title, detail, is_completed)
+    values (
+      v_roadmap_id,
+      (v_step->>'step_order')::integer,
+      v_step->>'title',
+      v_step->>'detail',
+      false
+    );
+  end loop;
+end;
+$$;
 ```
 
-Required table:
-
-```
-legal_documents
-```
-
-Stores:
-
-- Document chunks
-- Metadata
-- Embeddings
+### 3. Supabase Storage Buckets
+Ensure the following buckets exist in your Supabase project:
+1. `templates` (Publicly readable): Contains blank PDF form templates (e.g. `business_registration_blank.pdf`).
+2. `user_vault` (Private, authenticated access only): Secure folder structure used for storing private user documents and auto-generated PDFs.
 
 ---
 
-# 🚀 Core Modules
+## 🚀 Future Enhancements
 
-| Module | Description |
-|---------|-------------|
-| Authentication | User registration and secure login |
-| AI Assistant | Conversational legal guidance |
-| Roadmap Engine | Interactive task generation |
-| Document Vault | Secure cloud document storage |
-| Auto-fill Forms | Government application automation |
-| Vector Search | Semantic legal document retrieval |
-| RAG Pipeline | Retrieval-Augmented AI responses |
+* **Sinhala & Tamil Support**: Localizing the AI's prompts and outputs to native languages.
+* **Voice Assistance**: Interactive voice chat system for enhanced accessibility.
+* **OCR Ingestion**: AI document parsing of uploaded physical ID cards and application certificates.
+* **Government Integration**: Live API hooks to track application statuses in real-time.
 
 ---
 
-# 🔒 Security
 
-- Secure authentication
-- Protected cloud storage
-- Verified government knowledge base
-- Retrieval-based AI responses
-- Minimized hallucinations through RAG
-
----
-
-# 🎯 Future Enhancements
-
-- Sinhala language support
-- Tamil language support
-- Voice-based AI assistant
-- OCR for scanned government documents
-- Real-time application status tracking
-- Government API integrations
-- Offline roadmap access
-- Digital signature support
-
----
-
-# 👥 Team Members
-
-| Member | Responsibility |
-|---------|----------------|
-| **Chirath** | Identity & Security (Authentication & User Profile) |
-| **Poojani** | Conversational AI Interface (AI Assistant) |
-| **Osal** | Dynamic Roadmap Engine |
-| **Rashmi** | Document Vault & Auto-fill Forms |
-| **Sahas** | Vector Database & RAG Pipeline |
-
----
-
-# 🌟 Why CivicSync AI?
-
-Government services should be understandable by everyone—not just legal experts.
-
-CivicSync AI combines **Generative AI**, **Retrieval-Augmented Generation (RAG)**, and **secure cloud technologies** to transform complex government regulations into simple, actionable guidance. By making legal information accessible, trustworthy, and personalized, CivicSync empowers Sri Lankan citizens to confidently navigate administrative processes while saving time and reducing confusion.
-
----
 
 <p align="center">
-Built with ❤️ to make Sri Lankan government services more accessible through Artificial Intelligence.
+Built with ❤️ to simplify Sri Lankan government services through Artificial Intelligence.
 </p>
